@@ -1,3 +1,4 @@
+// It is the main server
 package main
 
 import (
@@ -62,5 +63,4 @@ func main() {
 	if e := grpcServer.Serve(listener); e != nil {
 		panic(e)
 	}
-
 }

@@ -16,6 +16,14 @@ generate:
 	--go-grpc_opt=paths=source_relative \
 	$(PROTO_DIR)/*.proto
 
+.PHONY: lint
+lint:
+	golangci-lint run ${args} ./ ...
+
+.PHONY: lint-fix
+lint-fix:
+	@make lint args=' --fix -v' cons_args='-v'
+
 clean:
 	rm -rf $(OUTPUT_DIR)
 

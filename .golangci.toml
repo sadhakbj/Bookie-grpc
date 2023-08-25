@@ -24,7 +24,7 @@ enable = [
     "gofumpt", # Or "gofmt", # Enforce standard formatting
     "goimports", # Ensure standard import formatting/ordering
     "misspell", # Fix spelling errors
-    "revive",  # General purpose linter
+    "revive",  # General purpose linter    
     "unconvert", # Detect unnecessary type conversions
     "unparam", # Detect unused function parameters
 
