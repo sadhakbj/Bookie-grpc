@@ -11,3 +11,5 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
 
 ### GRPC Server & HTTP Server
+
+Run the linter: `make lint`
