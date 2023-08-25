@@ -1,9 +1,11 @@
+// It is the main server
 package main
 
 import (
 	"context"
 	"log"
 	"net"
+	"slices"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 	"google.golang.org/grpc"
@@ -31,6 +33,14 @@ func (s *bookieService) ListBooks(context.Context, *bookiePb.ListBookRequest) (*
 		},
 	}
 
+	books = slices.Insert(books, 2, &bookiePb.Book{
+		Id:          "8910",
+		Title:       "Game of Thrones",
+		Price:       120,
+		Author:      "Author Three",
+		Description: "This is a another test",
+	})
+
 	return &bookiePb.ListBooksResponse{Books: books}, nil
 }
 
@@ -48,10 +58,9 @@ func main() {
 	grpcServer := grpc.NewServer()
 	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
 
+	log.Printf("Successfully started the server")
+
 	if e := grpcServer.Serve(listener); e != nil {
-		log.Printf("unable to serve %s", e)
 		panic(e)
 	}
-
-	log.Printf("Successfully started the server")
 }

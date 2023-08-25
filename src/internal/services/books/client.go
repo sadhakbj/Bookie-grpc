@@ -1,13 +1,16 @@
+// Package books is.
 package books
 
 import (
 	"context"
 
-	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 )
 
+// Book definiation
 type Book struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -16,11 +19,13 @@ type Book struct {
 	Description string `json:"description"`
 }
 
+// GRPCClient is the structure.
 type GRPCClient struct {
 	conn   *grpc.ClientConn
 	client bookiePb.BookieClient
 }
 
+// NewGRPCClient creates new instance of grpc client
 func NewGRPCClient() (*GRPCClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -39,10 +44,12 @@ func NewGRPCClient() (*GRPCClient, error) {
 	}, nil
 }
 
-func (c *GRPCClient) Close() {
-	c.conn.Close()
+// Close closes the grpc connection
+func (c *GRPCClient) Close() error {
+	return c.conn.Close()
 }
 
+// GetBooks returns all the books from grpc book service
 func (c *GRPCClient) GetBooks() ([]*Book, error) {
 	res, err := c.client.ListBooks(context.Background(), &bookiePb.ListBookRequest{PerPage: 10})
 	if err != nil {

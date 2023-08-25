@@ -1,3 +1,4 @@
+// Entrypoint for the client
 package main
 
 import (
@@ -17,14 +18,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize BookClient: %v", err)
 	}
-	defer bookClient.Close()
+	defer func() {
+		if err := bookClient.Close(); err != nil {
+			// Handle the error in an appropriate way, e.g., logging it
+			log.Fatalf("Error while closing bookClient: %v", err)
+		}
+	}()
 
 	http.HandleFunc("/books", listBooksHandler)
 	log.Println("Server started on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func listBooksHandler(w http.ResponseWriter, r *http.Request) {
+func listBooksHandler(w http.ResponseWriter, _ *http.Request) {
 	books, err := bookClient.GetBooks()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to get books: %v", err), http.StatusInternalServerError)
@@ -41,5 +47,8 @@ func listBooksHandler(w http.ResponseWriter, r *http.Request) {
 	// Set the Content-Type header to application/json
 	w.Header().Set("Content-Type", "application/json")
 	// Write the JSON response
-	w.Write(booksJSON)
+	_, err = w.Write(booksJSON)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get books: %v", err), http.StatusInternalServerError)
+	}
 }
