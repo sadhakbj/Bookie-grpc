@@ -41,5 +41,8 @@ func listBooksHandler(w http.ResponseWriter, r *http.Request) {
 	// Set the Content-Type header to application/json
 	w.Header().Set("Content-Type", "application/json")
 	// Write the JSON response
-	w.Write(booksJSON)
+	_, err = w.Write(booksJSON)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get books: %v", err), http.StatusInternalServerError)
+	}
 }

@@ -39,8 +39,11 @@ func NewGRPCClient() (*GRPCClient, error) {
 	}, nil
 }
 
-func (c *GRPCClient) Close() {
-	c.conn.Close()
+func (c *GRPCClient) Close() error {
+	if err := c.conn.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *GRPCClient) GetBooks() ([]*Book, error) {
