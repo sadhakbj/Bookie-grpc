@@ -19,7 +19,12 @@ jobs:
         with:
           go-version: "1.21"
 
-      - name: Install dependencies and run code generation
+      - name: Install Protocol Buffers compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Install dependencies, run code generation, and commit
         run: |
           go mod download
           make generate
