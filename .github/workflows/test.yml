@@ -23,6 +23,9 @@ jobs:
         run: |
           go mod download
 
+      - name: Build
+        run: make build
+
       - name: Test code
         run: |
           go test -race ./...

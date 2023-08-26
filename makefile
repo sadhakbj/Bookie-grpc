@@ -33,4 +33,8 @@ serve:
 client:
 	go run src/cmd/client/main.go
 
+.PHONY: build
+build:
+	@./scripts/build.sh
+
 .PHONY: all generate clean
