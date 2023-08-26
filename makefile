@@ -25,7 +25,7 @@ lint-fix:
 	@make lint args=' --fix -v' cons_args='-v'
 
 clean:
-	rm -rf $(OUTPUT_DIR)
+	rm -rf $(OUTPUT_DIR)/*
 
 serve:
 	go run src/cmd/server/main.go
