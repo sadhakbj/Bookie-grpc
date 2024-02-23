@@ -72,3 +72,21 @@ func (c *GRPCClient) GetBooks() ([]*Book, error) {
 
 	return bks, nil
 }
+
+// GetByID returns the resource with provided id
+func (c *GRPCClient) GetByID(id string) (*Book, error) {
+	res, err := c.client.GetByID(context.Background(), &bookiePb.GetByIDRequest{Id: id})
+	if err != nil {
+		return nil, err
+	}
+
+	book := &Book{
+		ID:          res.GetBook().GetId(),
+		Title:       res.GetBook().GetTitle(),
+		Description: res.GetBook().GetDescription(),
+		Price:       int(res.GetBook().GetPrice()),
+		Author:      res.GetBook().GetAuthor(),
+	}
+
+	return book, nil
+}
