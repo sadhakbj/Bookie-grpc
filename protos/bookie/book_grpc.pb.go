@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Bookie_ListBooks_FullMethodName  = "/Bookie/ListBooks"
 	Bookie_CreateBook_FullMethodName = "/Bookie/CreateBook"
+	Bookie_GetByID_FullMethodName    = "/Bookie/GetByID"
 )
 
 // BookieClient is the client API for Bookie service.
@@ -29,6 +30,7 @@ const (
 type BookieClient interface {
 	ListBooks(ctx context.Context, in *ListBookRequest, opts ...grpc.CallOption) (*ListBooksResponse, error)
 	CreateBook(ctx context.Context, in *CreateBookRequest, opts ...grpc.CallOption) (*CreateBookResponse, error)
+	GetByID(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetByIDResponse, error)
 }
 
 type bookieClient struct {
@@ -57,12 +59,22 @@ func (c *bookieClient) CreateBook(ctx context.Context, in *CreateBookRequest, op
 	return out, nil
 }
 
+func (c *bookieClient) GetByID(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetByIDResponse, error) {
+	out := new(GetByIDResponse)
+	err := c.cc.Invoke(ctx, Bookie_GetByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BookieServer is the server API for Bookie service.
 // All implementations must embed UnimplementedBookieServer
 // for forward compatibility
 type BookieServer interface {
 	ListBooks(context.Context, *ListBookRequest) (*ListBooksResponse, error)
 	CreateBook(context.Context, *CreateBookRequest) (*CreateBookResponse, error)
+	GetByID(context.Context, *GetByIDRequest) (*GetByIDResponse, error)
 	mustEmbedUnimplementedBookieServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedBookieServer) ListBooks(context.Context, *ListBookRequest) (*
 }
 func (UnimplementedBookieServer) CreateBook(context.Context, *CreateBookRequest) (*CreateBookResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBook not implemented")
+}
+func (UnimplementedBookieServer) GetByID(context.Context, *GetByIDRequest) (*GetByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetByID not implemented")
 }
 func (UnimplementedBookieServer) mustEmbedUnimplementedBookieServer() {}
 
@@ -125,6 +140,24 @@ func _Bookie_CreateBook_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Bookie_GetByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookieServer).GetByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Bookie_GetByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookieServer).GetByID(ctx, req.(*GetByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Bookie_ServiceDesc is the grpc.ServiceDesc for Bookie service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var Bookie_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateBook",
 			Handler:    _Bookie_CreateBook_Handler,
+		},
+		{
+			MethodName: "GetByID",
+			Handler:    _Bookie_GetByID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

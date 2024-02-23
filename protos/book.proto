@@ -29,7 +29,16 @@ message CreateBookResponse {
     Book book=1;
 }
 
+message GetByIDRequest {
+    string id=1;
+}
+
+message GetByIDResponse {
+    Book book=1;
+}
+
 service Bookie {
     rpc ListBooks(ListBookRequest) returns (ListBooksResponse);
     rpc CreateBook(CreateBookRequest) returns (CreateBookResponse);
+    rpc GetByID(GetByIDRequest) returns (GetByIDResponse);
 }
