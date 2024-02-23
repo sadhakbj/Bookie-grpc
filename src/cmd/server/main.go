@@ -1,3 +1,4 @@
+// Entrypoint for the grpc server
 package main
 
 import (

@@ -1,4 +1,4 @@
-// Package books is.
+// Package books is the BFF client / http server exposed to external clients.
 package books
 
 import (
