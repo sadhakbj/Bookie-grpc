@@ -11,15 +11,10 @@ type BookController struct {
 	bookClient *books.GRPCClient
 }
 
-func NewBookController() (*BookController, error) {
-	bookClient, err := books.NewGRPCClient()
-	if err != nil {
-		return nil, err
-	}
-
+func NewBookController(bookClient *books.GRPCClient) *BookController {
 	return &BookController{
 		bookClient: bookClient,
-	}, nil
+	}
 }
 
 func (bc *BookController) FetchBookByID(w http.ResponseWriter, req *http.Request) {

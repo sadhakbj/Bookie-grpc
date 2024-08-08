@@ -3,7 +3,6 @@ package main
 
 import (
 	"log"
-	"log/slog"
 	"net/http"
 
 	"github.com/sadhakbj/bookie-grpc/src/internal/client/controllers"
@@ -15,9 +14,6 @@ var bookClient *books.GRPCClient
 
 func main() {
 	logger := utils.InitializeLogger("bookie-client", true)
-	logger.Error("Starting client", slog.String("port", "8080"))
-
-	slog.Info("Starting client", slog.String("port", "8080"))
 
 	var err error
 	bookClient, err = books.NewGRPCClient()
@@ -32,7 +28,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	booksController, err := controllers.NewBookController()
+	booksController := controllers.NewBookController(bookClient)
 	if err != nil {
 		logger.Error("Failed to initialize BookController: %v", "error", err)
 	}
