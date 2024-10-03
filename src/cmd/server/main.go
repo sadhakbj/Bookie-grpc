@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
+	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
 
 var books = []*bookiePb.Book{
@@ -77,11 +78,13 @@ func main() {
 		log.Fatal("Could not listen: ", err)
 	}
 
-	log.Print("Creating a new server")
+	logger := utils.InitializeLogger("bookie-grpc", false)
+
+	logger.Info("Creating a new server")
 	grpcServer := grpc.NewServer()
 	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
 
-	log.Printf("Successfully started the server on port: " + port)
+	logger.Info("Successfully started the server on port: " + port)
 
 	if e := grpcServer.Serve(listener); e != nil {
 		panic(e)

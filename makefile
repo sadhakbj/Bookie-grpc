@@ -33,8 +33,16 @@ serve:
 client:
 	go run src/cmd/client/main.go
 
+deps:
+	go mod download
+
+vendor:
+	go mod vendor
+
 .PHONY: build
 build:
 	@./scripts/build.sh
+
+
 
 .PHONY: all generate clean

@@ -3,6 +3,7 @@ package books
 
 import (
 	"context"
+	"log/slog"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -31,6 +32,7 @@ func NewGRPCClient() (*GRPCClient, error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
+	slog.Info("inside this", slog.String("test", "Value"))
 	conn, err := grpc.Dial("localhost:8020", opts...)
 	if err != nil {
 		return nil, err
