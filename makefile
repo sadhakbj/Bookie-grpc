@@ -18,7 +18,7 @@ generate:
 
 .PHONY: lint
 lint:
-	golangci-lint run ${args} ./ ...
+	golangci-lint run ${args} ./src/...
 
 .PHONY: lint-fix
 lint-fix:

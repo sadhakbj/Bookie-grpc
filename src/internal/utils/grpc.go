@@ -1,3 +1,4 @@
+// Package utils provides utility functions for HTTP and gRPC operations.
 package utils
 
 import (
@@ -8,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// HandleGRPCError converts gRPC errors to appropriate HTTP responses.
 func HandleGRPCError(w http.ResponseWriter, err error) {
 	log.Println("Error:", err)
 	status, msg := GrpcErrorToHTTPStatus(err)
@@ -15,6 +17,7 @@ func HandleGRPCError(w http.ResponseWriter, err error) {
 	JSONResponse(w, status, false, msg, nil)
 }
 
+// GrpcErrorToHTTPStatus converts gRPC error codes to HTTP status codes.
 func GrpcErrorToHTTPStatus(err error) (int, string) {
 	if st, ok := status.FromError(err); ok {
 		switch st.Code() {

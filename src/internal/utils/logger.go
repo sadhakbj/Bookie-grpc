@@ -6,11 +6,12 @@ import (
 	"time"
 )
 
+// InitializeLogger creates and configures a structured logger with the given name and source options.
 func InitializeLogger(name string, addSource bool) *slog.Logger {
 	handler := &slog.HandlerOptions{
 		Level:     slog.LevelDebug,
 		AddSource: addSource,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey {
 				a.Key = "timestamp"
 				a.Value = slog.Int64Value(time.Now().Unix())

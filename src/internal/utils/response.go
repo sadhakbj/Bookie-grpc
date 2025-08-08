@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// JSONResponse writes a standardized JSON response to the HTTP response writer.
 func JSONResponse(w http.ResponseWriter, statusCode int, success bool, message string, data interface{}) {
 	response := map[string]interface{}{
 		"success": success,

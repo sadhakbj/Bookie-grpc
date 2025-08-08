@@ -33,7 +33,7 @@ func NewGRPCClient() (*GRPCClient, error) {
 	}
 
 	slog.Info("inside this", slog.String("test", "Value"))
-	conn, err := grpc.Dial("localhost:8020", opts...)
+	conn, err := grpc.NewClient("localhost:8020", opts...)
 	if err != nil {
 		return nil, err
 	}
