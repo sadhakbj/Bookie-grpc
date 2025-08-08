@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -84,9 +87,24 @@ func main() {
 	grpcServer := grpc.NewServer()
 	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
 
-	logger.Info("Successfully started the server on port: " + port)
+	// Create a channel to receive OS signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
-	if e := grpcServer.Serve(listener); e != nil {
-		panic(e)
-	}
+	// Start the server in a goroutine
+	go func() {
+		logger.Info("Successfully started the server on port: " + port)
+		if e := grpcServer.Serve(listener); e != nil {
+			logger.Error("Failed to serve: %v", "error", e)
+		}
+	}()
+
+	// Wait for shutdown signal
+	sig := <-signalChan
+	logger.Info("Received signal. Initiating graceful shutdown...", "signal", sig)
+
+	// Gracefully stop the server
+	logger.Info("Gracefully stopping the gRPC server...")
+	grpcServer.GracefulStop()
+	logger.Info("Server stopped gracefully")
 }
