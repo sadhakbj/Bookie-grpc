@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -58,10 +61,10 @@ func (s *bookieService) CreateBook(_ context.Context, input *bookiePb.CreateBook
 
 func (s *bookieService) GetByID(_ context.Context, input *bookiePb.GetByIDRequest) (*bookiePb.GetByIDResponse, error) {
 	fmt.Println("input is", input)
-	if input.GetId() == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "Please provide id")
-	}
 	for _, book := range books {
+		if input.GetId() == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "Please provide id")
+		}
 		if book.Id == input.Id {
 			return &bookiePb.GetByIDResponse{Book: book}, nil
 		}
@@ -81,9 +84,24 @@ func main() {
 	grpcServer := grpc.NewServer()
 	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
 
-	log.Printf("Successfully started the server on port: " + port)
+	// Create a channel to receive OS signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
-	if e := grpcServer.Serve(listener); e != nil {
-		panic(e)
-	}
+	// Start the server in a goroutine
+	go func() {
+		log.Printf("Successfully started the server on port: " + port)
+		if e := grpcServer.Serve(listener); e != nil {
+			log.Printf("Failed to serve: %v", e)
+		}
+	}()
+
+	// Wait for shutdown signal
+	sig := <-signalChan
+	log.Printf("Received signal: %v. Initiating graceful shutdown...", sig)
+
+	// Gracefully stop the server
+	log.Print("Gracefully stopping the gRPC server...")
+	grpcServer.GracefulStop()
+	log.Print("Server stopped gracefully")
 }

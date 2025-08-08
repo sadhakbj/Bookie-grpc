@@ -10,7 +10,7 @@ import (
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 )
 
-// Book definiation
+// Book definition
 type Book struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -52,6 +52,7 @@ func (c *GRPCClient) Close() error {
 // GetBooks returns all the books from grpc book service
 func (c *GRPCClient) GetBooks() ([]*Book, error) {
 	res, err := c.client.ListBooks(context.Background(), &bookiePb.ListBookRequest{PerPage: 10})
+
 	if err != nil {
 		return nil, err
 	}
