@@ -1,5 +1,7 @@
 [output]
-format = "colored-line-number"
+formats = [
+    {format = "colored-line-number"}
+]
 
 [linters]
 enable = [
