@@ -129,14 +129,6 @@ docker-restart:
 docker-clean:
 	docker-compose down -v --rmi all
 
-.PHONY: docker-prod-up
-docker-prod-up:
-	docker-compose -f docker-compose.prod.yml up -d
-
-.PHONY: docker-prod-down
-docker-prod-down:
-	docker-compose -f docker-compose.prod.yml down
-
 # Security scanning with trivy (install: brew install trivy)
 .PHONY: docker-scan
 docker-scan:
