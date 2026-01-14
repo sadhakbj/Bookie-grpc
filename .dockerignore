@@ -1,0 +1,19 @@
+# Binaries
+build/
+bin/
+*.exe
+*.test
+*.out
+
+# Git
+.git/
+.gitignore
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local config
+.env

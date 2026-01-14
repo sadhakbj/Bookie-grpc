@@ -1,0 +1,22 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server
+    ports:
+      - "8020:8020"
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: client
+    ports:
+      - "8080:8080"
+    environment:
+      - BOOKIE_SERVER_ADDR=server:8020
+    depends_on:
+      - server
+    restart: unless-stopped
