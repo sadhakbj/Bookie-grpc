@@ -4,6 +4,7 @@ package books
 import (
 	"context"
 	"log/slog"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,8 +33,14 @@ func NewGRPCClient() (*GRPCClient, error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	slog.Info("inside this", slog.String("test", "Value"))
-	conn, err := grpc.NewClient("localhost:8020", opts...)
+	// Get gRPC server address from environment variable, default to localhost:8020
+	grpcServerAddr := "localhost:8020"
+	if addr := os.Getenv("GRPC_SERVER_ADDR"); addr != "" {
+		grpcServerAddr = addr
+	}
+
+	slog.Info("Connecting to gRPC server", slog.String("address", grpcServerAddr))
+	conn, err := grpc.NewClient(grpcServerAddr, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,39 @@
+# Build stage
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies (git needed for build.sh)
+RUN apk add --no-cache git ca-certificates tzdata bash
+
+# Set working directory
+WORKDIR /build
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download && go mod verify
+
+# Copy source code and build script
+COPY . .
+
+# Use existing build script (single source of truth)
+RUN chmod +x ./scripts/build.sh && ./scripts/build.sh
+
+# Final stage - using distroless for maximum security
+FROM gcr.io/distroless/static:nonroot
+
+# Copy CA certificates and timezone data
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+# Copy the binary from builder (build.sh outputs to ./build/)
+COPY --from=builder /build/build/client /client
+
+# Use nonroot user (UID 65532)
+USER nonroot:nonroot
+
+# Expose the HTTP port
+EXPOSE 8080
+
+# Run the client
+ENTRYPOINT ["/client"]

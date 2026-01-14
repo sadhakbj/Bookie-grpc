@@ -75,7 +75,10 @@ func (s *bookieService) GetByID(_ context.Context, input *bookiePb.GetByIDReques
 }
 
 func main() {
-	port := "8020"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8020"
+	}
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Fatal("Could not listen: ", err)

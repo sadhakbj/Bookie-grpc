@@ -12,8 +12,14 @@ if [ -n "${GOARCH+x}" ] && [ -n "$GOARCH" ]; then
 fi
 
 SERVICE_NAME="bookie_grpc";
-GIT_REF=$(git describe --always)
-VERSION=commit-$GIT_REF
+
+# Get git ref, fallback to "unknown" if not in a git repo (e.g., Docker build)
+if git describe --always > /dev/null 2>&1; then
+  GIT_REF=$(git describe --always)
+  VERSION=commit-$GIT_REF
+else
+  VERSION=docker-build
+fi
 
 for directory in ./src/cmd/* ; do
   component=$(basename $directory)
