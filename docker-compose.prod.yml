@@ -1,0 +1,95 @@
+services:
+  # gRPC Server - Production Configuration
+  grpc-server:
+    image: bookie-grpc-server:${VERSION:-latest}
+    container_name: bookie-grpc-server
+    restart: always
+    ports:
+      - "8020:8020"
+    environment:
+      - PORT=8020
+      - TZ=UTC
+    networks:
+      - bookie-network
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64M
+    # Resource limits (production tuned)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+      # Restart policy for production
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=grpc-server,env=production"
+
+  # HTTP Client/BFF - Production Configuration
+  http-client:
+    image: bookie-http-client:${VERSION:-latest}
+    container_name: bookie-http-client
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - HTTP_PORT=8080
+      - GRPC_SERVER_ADDR=grpc-server:8020
+      - TZ=UTC
+    networks:
+      - bookie-network
+    depends_on:
+      - grpc-server
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64M
+    # Resource limits (production tuned)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+      # Restart policy for production
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=http-client,env=production"
+
+networks:
+  bookie-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+

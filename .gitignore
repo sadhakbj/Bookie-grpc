@@ -16,3 +16,16 @@
 
 vendor/
 build/
+
+# Docker
+.env
+.env.local
+*.log
+
+# Coverage
+coverage.out
+*.coverprofile
+
+# Temporary files
+tmp/
+temp/

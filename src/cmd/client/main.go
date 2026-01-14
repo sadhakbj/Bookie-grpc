@@ -40,9 +40,15 @@ func main() {
 	mux.HandleFunc("GET /books/{id}", booksController.FetchBookByID)
 	mux.HandleFunc("GET /books", booksController.FetchAllBooks)
 
+	// Get HTTP server port from environment variable, default to 8080
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		httpPort = "8080"
+	}
+
 	// Create HTTP server
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + httpPort,
 		Handler: mux,
 	}
 
@@ -52,7 +58,7 @@ func main() {
 
 	// Start the HTTP server in a goroutine
 	go func() {
-		logger.Info("Server started on :8080")
+		logger.Info("Server started on port: " + httpPort)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Failed to start server: %v", "error", err)
 		}

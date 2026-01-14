@@ -1,6 +1,6 @@
 module github.com/sadhakbj/bookie-grpc
 
-go 1.24
+go 1.25
 
 require (
 	google.golang.org/grpc v1.74.2
