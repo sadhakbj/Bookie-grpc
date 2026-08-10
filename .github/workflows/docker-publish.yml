@@ -1,0 +1,99 @@
+name: docker-publish
+
+# Build and push Docker images to GitHub Container Registry (ghcr.io) on every
+# merge to main.
+#
+# No secrets required! Authentication uses the built-in GITHUB_TOKEN, so this
+# workflow runs fully automatically on every merge.
+#
+# Visibility: packages inherit the repository visibility (public repo ->
+# public package). Pulls of public images are free and unlimited.
+#
+# Tagging scheme (pushed for each image):
+#   - latest              : moving pointer to the most recent build
+#   - <git-describe>      : version derived from git tags (e.g. v1.0.0 or
+#                           v1.0.0-3-gabc1234 when commits exist past a tag),
+#                           falls back to sha-<short> if the repo has no tags
+#   - sha-<short-sha>     : unique tag per merge (a new version every merge)
+#
+# Images are built multi-arch (linux/amd64, linux/arm64) and pushed to:
+#   ghcr.io/<owner>/bookie-grpc-server
+#   ghcr.io/<owner>/bookie-http-client
+
+on:
+  push:
+    branches:
+      - main
+    # Don't rebuild images for documentation-only merges
+    paths-ignore:
+      - "**/*.md"
+
+permissions:
+  contents: read
+  packages: write
+
+# Serialize pushes to main so concurrent merges can't race on the `latest` tag
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build & push ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: bookie-grpc-server
+            dockerfile: Dockerfile.server
+          - image: bookie-http-client
+            dockerfile: Dockerfile.client
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch tags so `git describe` can compute the version
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Version from git tags (like scripts/build.sh), sanitized for Docker
+      # tag rules; unique per merge thanks to the commit-distance + hash.
+      # The owner is lowercased because GHCR namespaces must be lowercase.
+      - name: Compute image version
+        id: version
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          VERSION=$(git describe --tags 2>/dev/null || echo "sha-$(git rev-parse --short HEAD)")
+          VERSION=$(echo "$VERSION" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+          echo "OWNER=${OWNER}" >> "${GITHUB_OUTPUT}"
+          echo "VERSION=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "SHA_TAG=sha-$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ steps.version.outputs.OWNER }}/${{ matrix.image }}:latest
+            ghcr.io/${{ steps.version.outputs.OWNER }}/${{ matrix.image }}:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ steps.version.outputs.OWNER }}/${{ matrix.image }}:${{ steps.version.outputs.SHA_TAG }}
