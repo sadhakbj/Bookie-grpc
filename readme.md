@@ -123,14 +123,60 @@ make docker-scan        # Security scan (needs trivy)
 
 See [DOCKER.md](DOCKER.md) for detailed documentation.
 
-## ☸️ Kubernetes (Next Step)
+## ☸️ Kubernetes
 
-Ready for Kubernetes! See [K8S_PREP.md](K8S_PREP.md) for:
+The app ships with production-ready Kubernetes manifests in [`k8s/`](k8s/), managed with [Kustomize](https://kustomize.io/). They work on any cluster — OrbStack, minikube, kind, GKE, EKS, AKS.
 
-- Deployment manifests
-- Services and Ingress
-- Autoscaling
-- Security policies
+### Run locally with OrbStack (macOS)
+
+OrbStack includes a built-in Kubernetes cluster:
+
+```bash
+# 1. Enable Kubernetes (once): OrbStack app → Settings → Kubernetes, or:
+orb start k8s
+
+# 2. Confirm kubectl points at it
+kubectl config current-context   # should print: orbstack
+
+# 3. Deploy the app
+kubectl apply -k k8s/
+
+# 4. Wait for pods to be ready
+kubectl get pods -n bookie -w
+
+# 5. Test the API
+kubectl port-forward -n bookie svc/http-client 8080:8080
+curl http://localhost:8080/books
+curl http://localhost:8080/books/1234
+```
+
+> 💡 **Offline development:** the manifests use `imagePullPolicy: IfNotPresent`, so locally built images are used when present — otherwise pods pull the latest images published to ghcr.io by CI:
+> ```bash
+> docker build -t ghcr.io/sadhakbj/bookie-grpc-server:latest -f Dockerfile.server .
+> docker build -t ghcr.io/sadhakbj/bookie-http-client:latest -f Dockerfile.client .
+> ```
+
+### Going to the cloud (GKE, EKS, AKS)
+
+The same manifests work as-is:
+
+```bash
+gcloud container clusters get-credentials my-cluster --region us-central1   # GKE example
+kubectl apply -k k8s/
+```
+
+Production tweaks to consider:
+
+- **Expose the API**: change `k8s/http-client-service.yaml` to `type: LoadBalancer` (cloud allocates an external IP) or add an Ingress.
+- **Pin versions**: override `images` in `k8s/kustomization.yaml` to a specific `sha-<hash>` tag instead of `latest` for reproducible rollouts.
+- **Roll out a new version** (images are published by CI on every merge to main):
+  ```bash
+  kubectl -n bookie set image deployment/grpc-server grpc-server=ghcr.io/sadhakbj/bookie-grpc-server:sha-abc1234
+  kubectl -n bookie set image deployment/http-client http-client=ghcr.io/sadhakbj/bookie-http-client:sha-abc1234
+  kubectl -n bookie rollout status deployment/grpc-server
+  ```
+- **Scale out**: `kubectl -n bookie scale deployment/grpc-server --replicas=3`
+- **Clean up**: `kubectl delete -k k8s/`
 
 ## 📊 Observability (Coming)
 
@@ -161,7 +207,14 @@ Ready for Kubernetes! See [K8S_PREP.md](K8S_PREP.md) for:
 ├── Dockerfile.server    # gRPC server image
 ├── Dockerfile.client    # HTTP client image
 ├── docker-compose.yml   # Development environment
-└── docker-compose.prod.yml  # Production environment
+├── docker-compose.prod.yml  # Production environment
+└── k8s/                 # Kubernetes manifests (Kustomize)
+│   ├── namespace.yaml
+│   ├── grpc-server-deployment.yaml
+│   ├── grpc-server-service.yaml
+│   ├── http-client-deployment.yaml
+│   ├── http-client-service.yaml
+│   └── kustomization.yaml
 ```
 
 ### Makefile Commands
@@ -224,12 +277,12 @@ trivy image bookie-http-client:latest
 GitHub Actions workflows included for:
 
 - Automated testing
-- Docker image building
+- Docker image publishing to GitHub Container Registry (ghcr.io)
 - Security scanning (Trivy)
 - Image signing (Cosign)
 - Multi-platform builds (amd64, arm64)
 
-See `.github/workflows/docker-build.yml`
+See `.github/workflows/docker-publish.yml` — builds both images multi-arch and pushes `latest`, a git-tag version, and a unique `sha-<hash>` tag to ghcr.io on every merge to main.
 
 ## 🧪 Testing
 

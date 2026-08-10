@@ -1,0 +1,17 @@
+# Internal ClusterIP service so the HTTP client (and other services)
+# can reach the gRPC server via the DNS name `grpc-server:8020`.
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-server
+  namespace: bookie
+  labels:
+    app: grpc-server
+spec:
+  selector:
+    app: grpc-server
+  ports:
+    - name: grpc
+      port: 8020
+      targetPort: 8020
+  type: ClusterIP

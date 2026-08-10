@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Everything is installed into the `bookie` namespace
+namespace: bookie
+
+resources:
+  - namespace.yaml
+  - grpc-server-deployment.yaml
+  - grpc-server-service.yaml
+  - http-client-deployment.yaml
+  - http-client-service.yaml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Optional overrides — no need to edit the manifests for common cases.
+#
+# Point at a different registry/owner (e.g. your org or a mirror):
+# images:
+#   - name: ghcr.io/sadhakbj/bookie-grpc-server
+#     newName: ghcr.io/your-org/bookie-grpc-server
+#   - name: ghcr.io/sadhakbj/bookie-http-client
+#     newName: ghcr.io/your-org/bookie-http-client
+#
+# Pin to a specific immutable version (e.g. the sha-<hash> tag pushed by CI):
+# images:
+#   - name: ghcr.io/sadhakbj/bookie-grpc-server
+#     newTag: sha-abc1234
+#   - name: ghcr.io/sadhakbj/bookie-http-client
+#     newTag: sha-abc1234
+# ─────────────────────────────────────────────────────────────────────────────

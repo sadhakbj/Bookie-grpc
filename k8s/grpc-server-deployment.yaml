@@ -1,0 +1,61 @@
+# gRPC server (Bookie backend service)
+#
+# Image: ghcr.io/sadhakbj/bookie-grpc-server
+# - Replace `sadhakbj` with your GitHub/Docker username if different.
+# - `imagePullPolicy: IfNotPresent` lets OrbStack use a locally built image
+#   (docker build -t ghcr.io/sadhakbj/bookie-grpc-server:latest -f Dockerfile.server .)
+#   while still pulling from ghcr.io when no local image exists.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-server
+  namespace: bookie
+  labels:
+    app: grpc-server
+    app.kubernetes.io/name: grpc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server
+  template:
+    metadata:
+      labels:
+        app: grpc-server
+    spec:
+      containers:
+        - name: grpc-server
+          image: ghcr.io/sadhakbj/bookie-grpc-server:latest
+          imagePullPolicy: IfNotPresent
+          # Distroless images already run as nonroot (UID 65532); make it explicit
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            readOnlyRootFilesystem: true
+          ports:
+            - name: grpc
+              containerPort: 8020
+          env:
+            - name: PORT
+              value: "8020"
+            - name: TZ
+              value: UTC
+          # The app has no health endpoint, so use TCP probes
+          readinessProbe:
+            tcpSocket:
+              port: 8020
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8020
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

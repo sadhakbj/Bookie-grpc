@@ -1,0 +1,60 @@
+# HTTP client / BFF (REST gateway that calls the gRPC server)
+#
+# Image: ghcr.io/sadhakbj/bookie-http-client
+# - Replace `sadhakbj` with your GitHub/Docker username if different.
+# - GRPC_SERVER_ADDR uses the Kubernetes service DNS name of the gRPC server.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-client
+  namespace: bookie
+  labels:
+    app: http-client
+    app.kubernetes.io/name: http-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: http-client
+  template:
+    metadata:
+      labels:
+        app: http-client
+    spec:
+      containers:
+        - name: http-client
+          image: ghcr.io/sadhakbj/bookie-http-client:latest
+          imagePullPolicy: IfNotPresent
+          # Distroless images already run as nonroot (UID 65532); make it explicit
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            readOnlyRootFilesystem: true
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: HTTP_PORT
+              value: "8080"
+            - name: GRPC_SERVER_ADDR
+              value: "grpc-server:8020"
+            - name: TZ
+              value: UTC
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

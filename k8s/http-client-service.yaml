@@ -1,0 +1,21 @@
+# Service for the HTTP client (BFF).
+#
+# ClusterIP by default (access via `kubectl port-forward` or an Ingress).
+# For LAN/dev access with OrbStack, change `type` to `NodePort` and open
+# http://localhost:<node-port>. For cloud (GKE/EKS/AKS), use `LoadBalancer`
+# to get an external IP, or expose via an Ingress.
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-client
+  namespace: bookie
+  labels:
+    app: http-client
+spec:
+  selector:
+    app: http-client
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
