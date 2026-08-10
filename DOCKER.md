@@ -100,7 +100,7 @@ make docker-build-client
 
 Both images use **multi-stage builds** for optimal security and size:
 
-- **Build Stage**: golang:1.24-alpine
+- **Build Stage**: golang:1.26-alpine
   - Downloads dependencies
   - Compiles Go binary with optimizations
 

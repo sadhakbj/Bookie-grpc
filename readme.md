@@ -21,7 +21,7 @@ A production-ready gRPC microservices application demonstrating gRPC, BFF (Backe
 ### Prerequisites
 
 - Docker & Docker Compose (recommended)
-- Or Go 1.24+ for local development
+- Or Go 1.26+ for local development
 
 ### Run with Docker (Easiest Way)
 
