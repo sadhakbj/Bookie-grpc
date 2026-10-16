@@ -1,3 +1,5 @@
+//go:generate mockgen -source=client.go -package=books -destination=client_mock.go
+
 // Package books is the BFF client / http server exposed to external clients.
 package books
 
@@ -21,6 +23,14 @@ type Book struct {
 	Price       int    `json:"price"`
 	Author      string `json:"author"`
 	Description string `json:"description"`
+}
+
+// Client is the surface used by HTTP controllers, implemented by GRPCClient.
+type Client interface {
+	// GetBooks returns all the books from grpc book service
+	GetBooks() ([]*Book, error)
+	// GetByID returns the resource with provided id
+	GetByID(id string) (*Book, error)
 }
 
 // GRPCClient is the structure.
@@ -55,8 +65,17 @@ func NewGRPCClient() (*GRPCClient, error) {
 	}, nil
 }
 
+// NewGRPCClientWithClient builds a GRPCClient around an injected BookieClient,
+// allowing tests to stand in for the real gRPC connection.
+func NewGRPCClientWithClient(client bookiePb.BookieClient) *GRPCClient {
+	return &GRPCClient{client: client}
+}
+
 // Close closes the grpc connection
 func (c *GRPCClient) Close() error {
+	if c.conn == nil {
+		return nil
+	}
 	return c.conn.Close()
 }
 
@@ -64,6 +83,10 @@ func (c *GRPCClient) Close() error {
 // gRPC health checking protocol. Used by the BFF readiness probe so that
 // Kubernetes only routes traffic when the upstream is actually reachable.
 func (c *GRPCClient) IsHealthy() bool {
+	if c.conn == nil {
+		return false
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
