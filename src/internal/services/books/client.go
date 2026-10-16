@@ -5,9 +5,11 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 )
@@ -56,6 +58,17 @@ func NewGRPCClient() (*GRPCClient, error) {
 // Close closes the grpc connection
 func (c *GRPCClient) Close() error {
 	return c.conn.Close()
+}
+
+// IsHealthy reports whether the gRPC server is serving, using the standard
+// gRPC health checking protocol. Used by the BFF readiness probe so that
+// Kubernetes only routes traffic when the upstream is actually reachable.
+func (c *GRPCClient) IsHealthy() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	resp, err := healthpb.NewHealthClient(c.conn).Check(ctx, &healthpb.HealthCheckRequest{})
+	return err == nil && resp.GetStatus() == healthpb.HealthCheckResponse_SERVING
 }
 
 // GetBooks returns all the books from grpc book service

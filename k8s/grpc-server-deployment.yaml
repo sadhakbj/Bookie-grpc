@@ -41,14 +41,15 @@ spec:
               value: "8020"
             - name: TZ
               value: UTC
-          # The app has no health endpoint, so use TCP probes
+          # Native gRPC health probe (k8s 1.24+) against the standard
+          # grpc.health.v1.Health service registered by the server
           readinessProbe:
-            tcpSocket:
+            grpc:
               port: 8020
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            grpc:
               port: 8020
             initialDelaySeconds: 10
             periodSeconds: 15

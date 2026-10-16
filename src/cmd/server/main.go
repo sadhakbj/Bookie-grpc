@@ -12,6 +12,8 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
@@ -90,6 +92,12 @@ func main() {
 	grpcServer := grpc.NewServer()
 	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
 
+	// Register the standard gRPC health checking service so Kubernetes probes
+	// (and grpc-health-probe) can verify liveness/readiness.
+	healthServer := health.NewServer()
+	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+	healthpb.RegisterHealthServer(grpcServer, healthServer)
+
 	// Create a channel to receive OS signals
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
@@ -105,6 +113,9 @@ func main() {
 	// Wait for shutdown signal
 	sig := <-signalChan
 	logger.Info("Received signal. Initiating graceful shutdown...", "signal", sig)
+
+	// Report NOT_SERVING so readiness probes fail immediately while draining
+	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
 
 	// Gracefully stop the server
 	logger.Info("Gracefully stopping the gRPC server...")

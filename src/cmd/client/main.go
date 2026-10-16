@@ -40,6 +40,17 @@ func main() {
 	mux.HandleFunc("GET /books/{id}", booksController.FetchBookByID)
 	mux.HandleFunc("GET /books", booksController.FetchAllBooks)
 
+	// Health endpoint used by Kubernetes probes (liveness/readiness).
+	// Returns 503 (not ready) when the gRPC upstream is unreachable, so
+	// Kubernetes stops routing traffic to this BFF until it can serve.
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		if bookClient != nil && bookClient.IsHealthy() {
+			utils.JSONResponse(w, http.StatusOK, true, "ok", nil)
+			return
+		}
+		utils.JSONResponse(w, http.StatusServiceUnavailable, false, "gRPC upstream not ready", nil)
+	})
+
 	// Get HTTP server port from environment variable, default to 8080
 	httpPort := os.Getenv("HTTP_PORT")
 	if httpPort == "" {

@@ -41,13 +41,16 @@ spec:
               value: "grpc-server:8020"
             - name: TZ
               value: UTC
+          # HTTP health endpoint (GET /health)
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 15
