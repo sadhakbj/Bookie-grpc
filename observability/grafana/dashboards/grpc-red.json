@@ -145,6 +145,36 @@
           "legendFormat": "{{service_name}}"
         }
       ]
+    },
+    {
+      "id": 7,
+      "title": "Service Logs (live)",
+      "type": "logs",
+      "datasource": "Loki",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "Loki",
+          "queryType": "range",
+          "expr": "{source=\"docker\"} | json service | service=~\"${service:regex}\""
+        }
+      ]
     }
   ]
 }
