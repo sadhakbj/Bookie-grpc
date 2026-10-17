@@ -52,8 +52,8 @@ Only pre-existing old containers in your Docker history are affected by the 24h 
 
 Standard `OTEL_*` env vars are honored by the app (see `src/internal/utils/telemetry.go`):
 
-- `OTEL_EXPORTER_OTLP_ENDPOINT` — OTLP gRPC receiver for traces (default `localhost:4317`; set to `jaeger:4317` inside compose, wired by `make serve`/`make client` for local runs).
-- `OTEL_METRICS_OTLP_ENDPOINT` — OTLP HTTP receiver for metrics (default `localhost:4318` when unset; set to `prometheus:9090` inside compose, wiring exports to `/api/v1/otlp/v1/metrics`).
+- `OTEL_EXPORTER_OTLP_ENDPOINT` — OTLP gRPC receiver for traces (default `localhost:4317`; set to `jaeger:4317` inside compose).
+- `OTEL_METRICS_OTLP_ENDPOINT` — OTLP HTTP receiver for metrics (default `localhost:4318`; set to `prometheus:9090` inside compose, wiring exports to `/api/v1/otlp/v1/metrics`).
 
 Grafana-specific env in compose: `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH` pins the RED dashboard as home; admin credentials via `GF_SECURITY_ADMIN_*`; anonymous Viewer access enabled for zero-click dev use.
 

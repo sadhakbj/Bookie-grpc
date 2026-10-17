@@ -4,7 +4,6 @@ package utils
 import (
 	"context"
 	"log/slog"
-	"os"
 	"sync"
 	"time"
 
@@ -24,10 +23,16 @@ var (
 	shutdownFns  []func(context.Context) error
 )
 
+// TelemetryConfig contains the exporter endpoints used by telemetry providers.
+type TelemetryConfig struct {
+	OTLPEndpoint        string
+	OTLPMetricsEndpoint string
+}
+
 // InitializeTelemetry wires OpenTelemetry tracer and meter providers.
 // Traces go over OTLP gRPC (Jaeger), metrics over OTLP HTTP to the
 // Prometheus OTLP receiver. It is safe to call once per process.
-func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName string) error {
+func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName string, config TelemetryConfig) error {
 	res, err := sdkresource.Merge(
 		sdkresource.Default(),
 		sdkresource.NewSchemaless(
@@ -38,7 +43,10 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 		return err
 	}
 
-	traceExp, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+	traceExp, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(config.OTLPEndpoint),
+	)
 	if err != nil {
 		return err
 	}
@@ -54,9 +62,7 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 		otlpmetrichttp.WithInsecure(),
 		otlpmetrichttp.WithURLPath("/api/v1/otlp/v1/metrics"),
 	}
-	if endpoint := os.Getenv("OTEL_METRICS_OTLP_ENDPOINT"); endpoint != "" {
-		metricOpts = append(metricOpts, otlpmetrichttp.WithEndpoint(endpoint))
-	}
+	metricOpts = append(metricOpts, otlpmetrichttp.WithEndpoint(config.OTLPMetricsEndpoint))
 	metricExporter, err := otlpmetrichttp.New(ctx, metricOpts...)
 	if err != nil {
 		return err
@@ -76,8 +82,8 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 
 	logger.Info("Telemetry initialized",
 		"service", serviceName,
-		"otlp_endpoint", endpointOrEmpty(),
-		"metrics_endpoint", os.Getenv("OTEL_METRICS_OTLP_ENDPOINT"),
+		"otlp_endpoint", config.OTLPEndpoint,
+		"metrics_endpoint", config.OTLPMetricsEndpoint,
 	)
 	return nil
 }
@@ -95,8 +101,4 @@ func ShutdownTelemetry(ctx context.Context, logger *slog.Logger) {
 		}
 		logger.Info("Telemetry shut down")
 	})
-}
-
-func endpointOrEmpty() string {
-	return os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 }
