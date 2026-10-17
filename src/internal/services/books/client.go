@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 )
 
@@ -43,6 +45,7 @@ type GRPCClient struct {
 func NewGRPCClient() (*GRPCClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	}
 
 	// Get gRPC server address from environment variable, default to localhost:8020

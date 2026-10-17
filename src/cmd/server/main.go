@@ -16,6 +16,8 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
 	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
@@ -88,8 +90,17 @@ func main() {
 
 	logger := utils.InitializeLogger("bookie-grpc", false)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := utils.InitializeTelemetry(ctx, logger, "bookie-grpc"); err != nil {
+		logger.Error("Failed to initialize telemetry: %v", "error", err)
+	}
+	defer utils.ShutdownTelemetry(context.Background(), logger)
+
 	logger.Info("Creating a new server")
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
 
 	// Register the standard gRPC health checking service so Kubernetes probes

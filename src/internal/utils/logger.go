@@ -19,7 +19,7 @@ func InitializeLogger(name string, addSource bool) *slog.Logger {
 			return a
 		},
 	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, handler).WithAttrs([]slog.Attr{
+	logger := slog.New(NewTraceLoggerHandler(slog.NewJSONHandler(os.Stdout, handler)).WithAttrs([]slog.Attr{
 		slog.String("service", name),
 	}))
 	return logger

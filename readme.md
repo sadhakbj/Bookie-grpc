@@ -26,19 +26,16 @@ A production-ready gRPC microservices application demonstrating gRPC, BFF (Backe
 ### Run with Docker (Easiest Way)
 
 ```bash
-# 1. Build the images
-make docker-build
+# 1. One command: build app + start it with the full observability stack
+make obs
 
-# 2. Start the services
-make docker-up
-
-# 3. Test it works
+# 2. Test it works
 curl http://localhost:8080/books
 
-# 4. View logs (optional)
+# 3. View logs (optional)
 make docker-logs
 
-# 5. Stop when done
+# 4. Stop when done
 make docker-down
 ```
 
@@ -46,6 +43,14 @@ make docker-down
 
 - 🌐 HTTP API: http://localhost:8080
 - 🔌 gRPC Server: localhost:8020
+- 🖥️ Grafana: http://localhost:3000 (RED dashboard is the home page)
+- 🔍 Jaeger: http://localhost:16686
+
+`make obs` also builds the images if they don't exist yet. If you want to run just the app without the observability stack:
+
+```bash
+make docker-build && make docker-up
+```
 
 ### Alternative: Helper Script
 
@@ -178,11 +183,22 @@ Production tweaks to consider:
 - **Scale out**: `kubectl -n bookie scale deployment/grpc-server --replicas=3`
 - **Clean up**: `kubectl delete -k k8s/`
 
-## 📊 Observability (Coming)
+## 📊 Observability (Ready)
 
-- Prometheus metrics
-- Jaeger tracing
-- Grafana dashboards
+Everything (traces, metrics, logs, dashboards) is provisioned from code — no manual UI setup.
+
+```bash
+# One command: app + Jaeger + Prometheus + Loki + Grafana
+make obs
+
+# Generate traffic so the dashboards have data
+make traffic
+```
+
+- 🖥️ Grafana (lands on the gRPC RED dashboard): http://localhost:3000 — admin/admin
+- 🔍 Jaeger (spans, client→server in one trace): http://localhost:16686
+
+Details: see [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ## 🛠️ Development
 

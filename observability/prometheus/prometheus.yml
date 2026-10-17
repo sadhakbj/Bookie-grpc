@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+# Accept metrics pushed via OTLP (from the Go services)
+# Run with: --web.enable-otlp-receiver --otlp.enable-prometheus-translation
+otlp:
+  promote_resource_attributes:
+    - service.name
+    - service.instance.id
+
+storage:
+  tsdb:
+    out_of_order_time_window: 5m

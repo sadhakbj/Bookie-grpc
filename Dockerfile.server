@@ -1,6 +1,9 @@
 # Build stage
 FROM golang:1.26-alpine AS builder
 
+# Auto-download the toolchain required by go.mod
+ENV GOTOOLCHAIN=auto
+
 # Install build dependencies (git needed for build.sh)
 RUN apk add --no-cache git ca-certificates tzdata bash
 
