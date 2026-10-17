@@ -29,13 +29,16 @@ A production-ready gRPC microservices application demonstrating gRPC, BFF (Backe
 # 1. One command: build app + start it with the full observability stack
 make obs
 
-# 2. Test it works
+# 2. Generate a bit of traffic so dashboards have data (optional)
+make traffic
+
+# 3. Test it works
 curl http://localhost:8080/books
 
-# 3. View logs (optional)
+# 4. View logs — no manual setup; live logs are already on the Grafana dashboard
 make docker-logs
 
-# 4. Stop when done
+# 5. Stop when done
 make docker-down
 ```
 
@@ -216,33 +219,53 @@ Details: see [OBSERVABILITY.md](OBSERVABILITY.md).
 │   └── internal/
 │       ├── client/      # HTTP controllers
 │       ├── services/    # gRPC client service
-│       └── utils/       # Shared utilities
+│       └── utils/       # Shared utilities (logger, telemetry, trace logger)
+├── observability/       # Observability stack config (all provisioned from code)
+│   ├── prometheus/      # Prometheus config
+│   ├── grafana/         # Datasource + dashboard provisioning
+│   ├── loki/            # Loki config
+│   └── alloy/           # Grafana Alloy (log shipping)
 ├── scripts/
 │   ├── build.sh
 │   └── docker-dev.sh    # Docker helper
 ├── Dockerfile.server    # gRPC server image
 ├── Dockerfile.client    # HTTP client image
-├── docker-compose.yml   # Development environment
+├── docker-compose.yml   # Dev environment + observability stack
 ├── docker-compose.prod.yml  # Production environment
+├── OBSERVABILITY.md     # Observability deep-dive
 └── k8s/                 # Kubernetes manifests (Kustomize)
-│   ├── namespace.yaml
-│   ├── grpc-server-deployment.yaml
-│   ├── grpc-server-service.yaml
-│   ├── http-client-deployment.yaml
-│   ├── http-client-service.yaml
-│   └── kustomization.yaml
+    ├── namespace.yaml
+    ├── grpc-server-deployment.yaml
+    ├── grpc-server-service.yaml
+    ├── http-client-deployment.yaml
+    ├── http-client-service.yaml
+    └── kustomization.yaml
 ```
 
 ### Makefile Commands
 
 ```bash
+# App development
 make setup         # One-time setup (install all dependencies)
 make generate      # Generate protobuf code
 make build         # Build binaries
 make serve         # Run gRPC server
 make client        # Run HTTP client
+make test          # Run tests (accepts args="-run TestX -v")
 make lint          # Run linter
 make lint-fix      # Fix linting issues
+
+# Docker (app)
+make docker-build  # Build app images
+make docker-up     # Start app services
+make docker-down   # Stop app services
+make docker-logs   # Stream app logs
+
+# Observability — everything is provisioned from code, nothing manual
+make obs           # Build + start app AND full observability stack (one command)
+make traffic       # Generate 60s of demo traffic so dashboards have data
+make observability-down   # Stop just the observability stack
+make observability-logs   # Stream observability stack logs
 ```
 
 ### Generating Protocol Buffers

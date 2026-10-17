@@ -69,10 +69,10 @@ clean:
 	rm -rf $(OUTPUT_DIR)
 
 serve:
-	go run src/cmd/server/main.go
+	OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_METRICS_OTLP_ENDPOINT=localhost:9090 go run src/cmd/server/main.go
 
 client:
-	go run src/cmd/client/main.go
+	OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_METRICS_OTLP_ENDPOINT=localhost:9090 go run src/cmd/client/main.go
 
 deps:
 	@echo "Downloading Go dependencies..."

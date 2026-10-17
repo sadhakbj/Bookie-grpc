@@ -393,17 +393,16 @@ The current Docker setup is K8s-ready. Key considerations:
 
 ### Observability
 
-1. **Metrics**
-   - Prometheus instrumentation
-   - Custom metrics for gRPC and HTTP
+✅ **Implemented** — see [OBSERVABILITY.md](OBSERVABILITY.md) for the full guide.
 
-2. **Tracing**
-   - OpenTelemetry integration
-   - Distributed tracing across services
+```bash
+make obs            # app + Jaeger + Prometheus + Loki + Alloy + Grafana, all provisioned from code
+make traffic        # demo traffic so dashboards have data
+```
 
-3. **Logging**
-   - Structured logging (JSON)
-   - Log aggregation (ELK, Loki)
+- **Grafana** (http://localhost:3000): gRPC RED dashboard as home page — metrics on top, live logs below, one service filter for both
+- **Jaeger** (http://localhost:16686): distributed traces, client→server chained via OTel propagators
+- **Structured logging** (JSON) → shipped to **Loki** by Grafana Alloy
 
 ## Best Practices Implemented
 
