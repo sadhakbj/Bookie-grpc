@@ -1,7 +1,8 @@
 # Build stage
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
-# Auto-download the toolchain required by go.mod
+# Frictionless locally, but always satisfies whatever toolchain go.mod needs
+# (e.g. when deps land on a newer Go first)
 ENV GOTOOLCHAIN=auto
 
 # Install build dependencies (git needed for build.sh)
