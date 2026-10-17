@@ -10,11 +10,11 @@ import (
 
 // BookController handles HTTP requests related to book operations.
 type BookController struct {
-	bookClient *books.GRPCClient
+	bookClient books.Client
 }
 
-// NewBookController creates a new BookController with the given gRPC client.
-func NewBookController(bookClient *books.GRPCClient) *BookController {
+// NewBookController creates a new BookController with the given books client.
+func NewBookController(bookClient books.Client) *BookController {
 	return &BookController{
 		bookClient: bookClient,
 	}

@@ -18,8 +18,9 @@ setup:
 	@echo "2. Installing protobuf Go plugins..."
 	@export PATH=$$PATH:$$(go env GOPATH)/bin && \
 		go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
-		go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@echo "✅ Protobuf plugins installed"
+		go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
+		go install go.uber.org/mock/mockgen@latest
+	@echo "✅ Protobuf plugins and mockgen installed"
 	@echo ""
 	@echo "3. Checking protoc..."
 	@which protoc > /dev/null 2>&1 && echo "✅ protoc found" || \
@@ -52,6 +53,17 @@ lint:
 .PHONY: lint-fix
 lint-fix:
 	@make lint args=' --fix -v' cons_args='-v'
+
+# Regenerate mocks (usage: make gen/mocks) - you can also click the
+# green go:generate gutter icon in GoLand on the directive file
+.PHONY: gen/mocks
+gen/mocks:
+	go generate ./...
+
+# Run all tests (usage: make test [args="-run TestGrpc -v"])
+.PHONY: test
+test:
+	go test ${args} ./src/...
 
 clean:
 	rm -rf $(OUTPUT_DIR)
