@@ -26,16 +26,16 @@ A production-ready gRPC microservices application demonstrating gRPC, BFF (Backe
 ### Run with Docker (Easiest Way)
 
 ```bash
-# 1. Build the images
-make docker-build
+# 1. One command: build app + start it with the full observability stack
+make obs
 
-# 2. Start the services
-make docker-up
+# 2. Generate a bit of traffic so dashboards have data (optional)
+make traffic
 
 # 3. Test it works
 curl http://localhost:8080/books
 
-# 4. View logs (optional)
+# 4. View logs — no manual setup; live logs are already on the Grafana dashboard
 make docker-logs
 
 # 5. Stop when done
@@ -46,6 +46,14 @@ make docker-down
 
 - 🌐 HTTP API: http://localhost:8080
 - 🔌 gRPC Server: localhost:8020
+- 🖥️ Grafana: http://localhost:3000 (RED dashboard is the home page)
+- 🔍 Jaeger: http://localhost:16686
+
+`make obs` also builds the images if they don't exist yet. If you want to run just the app without the observability stack:
+
+```bash
+make docker-build && make docker-up
+```
 
 ### Alternative: Helper Script
 
@@ -178,11 +186,22 @@ Production tweaks to consider:
 - **Scale out**: `kubectl -n bookie scale deployment/grpc-server --replicas=3`
 - **Clean up**: `kubectl delete -k k8s/`
 
-## 📊 Observability (Coming)
+## 📊 Observability (Ready)
 
-- Prometheus metrics
-- Jaeger tracing
-- Grafana dashboards
+Everything (traces, metrics, logs, dashboards) is provisioned from code — no manual UI setup.
+
+```bash
+# One command: app + Jaeger + Prometheus + Loki + Grafana
+make obs
+
+# Generate traffic so the dashboards have data
+make traffic
+```
+
+- 🖥️ Grafana (lands on the gRPC RED dashboard): http://localhost:3000 — admin/admin
+- 🔍 Jaeger (spans, client→server in one trace): http://localhost:16686
+
+Details: see [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ## 🛠️ Development
 
@@ -200,33 +219,53 @@ Production tweaks to consider:
 │   └── internal/
 │       ├── client/      # HTTP controllers
 │       ├── services/    # gRPC client service
-│       └── utils/       # Shared utilities
+│       └── utils/       # Shared utilities (logger, telemetry, trace logger)
+├── observability/       # Observability stack config (all provisioned from code)
+│   ├── prometheus/      # Prometheus config
+│   ├── grafana/         # Datasource + dashboard provisioning
+│   ├── loki/            # Loki config
+│   └── alloy/           # Grafana Alloy (log shipping)
 ├── scripts/
 │   ├── build.sh
 │   └── docker-dev.sh    # Docker helper
 ├── Dockerfile.server    # gRPC server image
 ├── Dockerfile.client    # HTTP client image
-├── docker-compose.yml   # Development environment
+├── docker-compose.yml   # Dev environment + observability stack
 ├── docker-compose.prod.yml  # Production environment
+├── OBSERVABILITY.md     # Observability deep-dive
 └── k8s/                 # Kubernetes manifests (Kustomize)
-│   ├── namespace.yaml
-│   ├── grpc-server-deployment.yaml
-│   ├── grpc-server-service.yaml
-│   ├── http-client-deployment.yaml
-│   ├── http-client-service.yaml
-│   └── kustomization.yaml
+    ├── namespace.yaml
+    ├── grpc-server-deployment.yaml
+    ├── grpc-server-service.yaml
+    ├── http-client-deployment.yaml
+    ├── http-client-service.yaml
+    └── kustomization.yaml
 ```
 
 ### Makefile Commands
 
 ```bash
+# App development
 make setup         # One-time setup (install all dependencies)
 make generate      # Generate protobuf code
 make build         # Build binaries
 make serve         # Run gRPC server
 make client        # Run HTTP client
+make test          # Run tests (accepts args="-run TestX -v")
 make lint          # Run linter
 make lint-fix      # Fix linting issues
+
+# Docker (app)
+make docker-build  # Build app images
+make docker-up     # Start app services
+make docker-down   # Stop app services
+make docker-logs   # Stream app logs
+
+# Observability — everything is provisioned from code, nothing manual
+make obs           # Build + start app AND full observability stack (one command)
+make traffic       # Generate 60s of demo traffic so dashboards have data
+make observability-down   # Stop just the observability stack
+make observability-logs   # Stream observability stack logs
 ```
 
 ### Generating Protocol Buffers

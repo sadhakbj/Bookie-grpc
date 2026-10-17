@@ -1,0 +1,38 @@
+logging {
+  level = "info"
+}
+
+// OTLP writes go to Loki
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// Drop log entries older than 24h (Docker replays stale history on startup,
+// which Loki rejects as "too far behind")
+loki.process "filter" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.drop {
+    older_than          = "24h"
+    drop_counter_reason = "docker_log_replay"
+  }
+}
+
+// Discover running containers
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Ship every container's stdout (JSON logs, incl. service/trace_id fields)
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.filter.receiver]
+
+  labels = {
+    stream = "stdout",
+    source = "docker",
+  }
+}

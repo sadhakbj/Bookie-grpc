@@ -11,6 +11,8 @@ services:
     environment:
       - PORT=8020
       - TZ=UTC
+      - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+      - OTEL_METRICS_OTLP_ENDPOINT=prometheus:9090
     networks:
       - bookie-network
     # Security options
@@ -53,6 +55,8 @@ services:
       - HTTP_PORT=8080
       - GRPC_SERVER_ADDR=grpc-server:8020
       - TZ=UTC
+      - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+      - OTEL_METRICS_OTLP_ENDPOINT=prometheus:9090
     networks:
       - bookie-network
     depends_on:
@@ -83,6 +87,85 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+# --- Observability stack ---
+  jaeger:
+    image: jaegertracing/all-in-one:1.68.0
+    container_name: bookie-jaeger
+    restart: unless-stopped
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver (traces + metrics + logs)
+      - "16686:16686" # Jaeger UI
+    networks:
+      - bookie-network
+
+  prometheus:
+    image: prom/prometheus:v3.8.1
+    container_name: bookie-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-otlp-receiver
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - bookie-network
+
+  loki:
+    image: grafana/loki:3.6.4
+    container_name: bookie-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./observability/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+    ports:
+      - "3100:3100"
+    networks:
+      - bookie-network
+
+  alloy:
+    image: grafana/alloy:v1.11.0
+    container_name: bookie-alloy
+    restart: unless-stopped
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+      - jaeger
+      - prometheus
+    ports:
+      - "12345:12345"
+    networks:
+      - bookie-network
+
+  grafana:
+    image: grafana/grafana:12.1.3
+    container_name: bookie-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/grpc-red.json
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+    ports:
+      - "3000:3000"
+    networks:
+      - bookie-network
 
 networks:
   bookie-network:

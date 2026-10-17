@@ -69,10 +69,10 @@ clean:
 	rm -rf $(OUTPUT_DIR)
 
 serve:
-	go run src/cmd/server/main.go
+	OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_METRICS_OTLP_ENDPOINT=localhost:9090 go run src/cmd/server/main.go
 
 client:
-	go run src/cmd/client/main.go
+	OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_METRICS_OTLP_ENDPOINT=localhost:9090 go run src/cmd/client/main.go
 
 deps:
 	@echo "Downloading Go dependencies..."
@@ -140,6 +140,42 @@ docker-restart:
 .PHONY: docker-clean
 docker-clean:
 	docker-compose down -v --rmi all
+
+# Observability stack commands
+.PHONY: observability-up
+observability-up:
+	docker-compose up -d jaeger prometheus loki alloy grafana
+
+.PHONY: observability-down
+observability-down:
+	docker-compose stop jaeger prometheus loki alloy grafana
+
+.PHONY: observability-logs
+observability-logs:
+	docker-compose logs -f jaeger prometheus loki alloy grafana
+
+.PHONY: obs
+obs: docker-build docker-up observability-up
+	@echo ""
+	@echo "🎉 Full stack running!"
+	@echo "  gRPC server: localhost:8020"
+	@echo "  HTTP BFF:    localhost:8080"
+	@echo "  Grafana:     http://localhost:3000 (admin/admin)"
+	@echo "  Jaeger UI:   http://localhost:16686"
+	@echo "  Prometheus:  http://localhost:9090"
+	@echo "  Loki:        http://localhost:3100"
+
+# Generate demo traffic so the Grafana dashboard has data to show
+.PHONY: traffic
+traffic:
+	@echo "🚗 Generating traffic for 60s..."
+	@for i in $$(seq 1 30); do \
+		curl -s http://$${BOOKIE_HOST:-localhost}:8080/books/1234 > /dev/null; \
+		curl -s http://$${BOOKIE_HOST:-localhost}:8080/books > /dev/null; \
+		curl -s "http://$${BOOKIE_HOST:-localhost}:8080/books/$$(( ( $$RANDOM % 9000 ) + 1000 ))" > /dev/null; \
+		sleep 1; \
+	done
+	@echo "✅ Done — check Grafana/Jaeger"
 
 # Security scanning with trivy (install: brew install trivy)
 .PHONY: docker-scan

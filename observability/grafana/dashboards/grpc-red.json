@@ -1,0 +1,180 @@
+{
+  "title": "gRPC RED Metrics",
+  "uid": "grpc-red",
+  "tags": [
+    "grpc",
+    "red"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(rpc_server_call_duration_seconds_count, service_name)",
+        "refresh": 2,
+        "includeAll": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (RPS)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rpc_server_call_duration_seconds_count{service_name=~\"$service\"}[1m])) by (service_name)",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error Rate (% of total calls)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rpc_server_call_duration_seconds_count{service_name=~\"$service\", rpc_response_status_code!=\"OK\"}[1m])) by (service_name) / sum(rate(rpc_server_call_duration_seconds_count{service_name=~\"$service\"}[1m])) by (service_name) * 100",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Latency (ms) \u2014 p50 / p95 / p99",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(rpc_server_call_duration_seconds_bucket{service_name=~\"$service\"}[1m])) by (le, service_name)) * 1000",
+          "legendFormat": "p50 {{service_name}}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rpc_server_call_duration_seconds_bucket{service_name=~\"$service\"}[1m])) by (le, service_name)) * 1000",
+          "legendFormat": "p95 {{service_name}}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(rpc_server_call_duration_seconds_bucket{service_name=~\"$service\"}[1m])) by (le, service_name)) * 1000",
+          "legendFormat": "p99 {{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Calls by Status Code",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rpc_server_call_duration_seconds_count{service_name=~\"$service\"}[1m])) by (rpc_response_status_code)",
+          "legendFormat": "{{rpc_response_status_code}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Client-side Rate (BFF \u2192 gRPC)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rpc_client_call_duration_seconds_count[1m])) by (service_name)",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Client-side Error Rate",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rpc_client_call_duration_seconds_count{rpc_response_status_code!=\"OK\"}[1m])) by (service_name)",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Service Logs (live)",
+      "type": "logs",
+      "datasource": "Loki",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "Loki",
+          "queryType": "range",
+          "expr": "{source=\"docker\"} | json service | service=~\"${service:regex}\""
+        }
+      ]
+    }
+  ]
+}

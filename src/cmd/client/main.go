@@ -19,6 +19,13 @@ var bookClient *books.GRPCClient
 func main() {
 	logger := utils.InitializeLogger("bookie-client", true)
 
+	telemetryCtx, telemetryCancel := context.WithCancel(context.Background())
+	defer telemetryCancel()
+	if err := utils.InitializeTelemetry(telemetryCtx, logger, "bookie-client"); err != nil {
+		logger.Error("Failed to initialize telemetry: %v", "error", err)
+	}
+	defer utils.ShutdownTelemetry(context.Background(), logger)
+
 	var err error
 	bookClient, err = books.NewGRPCClient()
 	if err != nil {
