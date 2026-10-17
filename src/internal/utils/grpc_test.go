@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const somethingWentWrong = "Something went wrong"
+
 func TestGrpcErrorToHTTPStatus(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -26,19 +28,19 @@ func TestGrpcErrorToHTTPStatus(t *testing.T) {
 			name:        "PermissionDenied maps to 500",
 			err:         status.Error(codes.PermissionDenied, "denied"),
 			wantStatus:  http.StatusInternalServerError,
-			wantMessage: "Something went wrong",
+			wantMessage: somethingWentWrong,
 		},
 		{
 			name:        "plain error maps to 500",
 			err:         errors.New("boom"),
 			wantStatus:  http.StatusInternalServerError,
-			wantMessage: "Something went wrong",
+			wantMessage: somethingWentWrong,
 		},
 		{
 			name:        "nil error maps to 500",
 			err:         nil,
 			wantStatus:  http.StatusInternalServerError,
-			wantMessage: "Something went wrong",
+			wantMessage: somethingWentWrong,
 		},
 	}
 

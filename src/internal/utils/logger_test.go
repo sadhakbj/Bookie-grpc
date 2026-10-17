@@ -20,7 +20,9 @@ func TestInitializeLogger(t *testing.T) {
 	logger := InitializeLogger("bookie-test", false)
 	logger.Info("hello from logger")
 
-	w.Close()
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close stdout pipe: %v", err)
+	}
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(r); err != nil {
 		t.Fatalf("failed to read piped output: %v", err)

@@ -7,21 +7,25 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/sadhakbj/bookie-grpc/protos/bookie"
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
+)
+
+const (
+	harryPotterTitle = "Harry Potter"
+	jkRowlingAuthor  = "JK Rowling"
 )
 
 func TestGetByID(t *testing.T) {
 	t.Run("maps proto response to Book", func(t *testing.T) {
-		mockClient := bookie.NewMockBookieClient(gomock.NewController(t))
+		mockClient := bookiePb.NewMockBookieClient(gomock.NewController(t))
 		mockClient.EXPECT().
 			GetByID(gomock.Any(), &bookiePb.GetByIDRequest{Id: "1234"}).
 			Return(&bookiePb.GetByIDResponse{
 				Book: &bookiePb.Book{
 					Id:          "1234",
-					Title:       "Harry Potter",
+					Title:       harryPotterTitle,
 					Price:       120,
-					Author:      "JK Rowling",
+					Author:      jkRowlingAuthor,
 					Description: "a lovely book",
 				},
 			}, nil)
@@ -33,9 +37,9 @@ func TestGetByID(t *testing.T) {
 		}
 		want := Book{
 			ID:          "1234",
-			Title:       "Harry Potter",
+			Title:       harryPotterTitle,
 			Price:       120,
-			Author:      "JK Rowling",
+			Author:      jkRowlingAuthor,
 			Description: "a lovely book",
 		}
 		if *book != want {
@@ -44,7 +48,7 @@ func TestGetByID(t *testing.T) {
 	})
 
 	t.Run("returns grpc error unchanged", func(t *testing.T) {
-		mockClient := bookie.NewMockBookieClient(gomock.NewController(t))
+		mockClient := bookiePb.NewMockBookieClient(gomock.NewController(t))
 		mockClient.EXPECT().
 			GetByID(gomock.Any(), gomock.Any()).
 			Return(nil, status.Error(codes.NotFound, "Book with ID 999 not found"))
@@ -62,11 +66,11 @@ func TestGetByID(t *testing.T) {
 
 func TestGetBooks(t *testing.T) {
 	t.Run("maps proto list to Book slice", func(t *testing.T) {
-		mockClient := bookie.NewMockBookieClient(gomock.NewController(t))
+		mockClient := bookiePb.NewMockBookieClient(gomock.NewController(t))
 		mockClient.EXPECT().
 			ListBooks(gomock.Any(), &bookiePb.ListBookRequest{PerPage: 10}).
 			Return(&bookiePb.ListBooksResponse{Books: []*bookiePb.Book{
-				{Id: "1", Title: "Harry Potter", Price: 120, Author: "JK Rowling", Description: "lovely"},
+				{Id: "1", Title: harryPotterTitle, Price: 120, Author: jkRowlingAuthor, Description: "lovely"},
 				{Id: "2", Title: "Game of life", Price: 450, Author: "Author Two", Description: "test"},
 			}}, nil)
 		client := NewGRPCClientWithClient(mockClient)
@@ -78,13 +82,13 @@ func TestGetBooks(t *testing.T) {
 		if len(books) != 2 {
 			t.Fatalf("got %d books, want 2", len(books))
 		}
-		if books[0].ID != "1" || books[0].Title != "Harry Potter" || books[1].Price != 450 {
+		if books[0].ID != "1" || books[0].Title != harryPotterTitle || books[1].Price != 450 {
 			t.Errorf("mapped books = %+v, want proto values", books)
 		}
 	})
 
 	t.Run("returns grpc error unchanged", func(t *testing.T) {
-		mockClient := bookie.NewMockBookieClient(gomock.NewController(t))
+		mockClient := bookiePb.NewMockBookieClient(gomock.NewController(t))
 		mockClient.EXPECT().
 			ListBooks(gomock.Any(), gomock.Any()).
 			Return(nil, status.Error(codes.Unavailable, "server down"))
