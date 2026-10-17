@@ -61,18 +61,22 @@ gen/mocks:
 	go generate ./...
 
 # Run all tests (usage: make test [args="-run TestGrpc -v"])
-.PHONY: test
+.PHONY: test local-config
 test:
 	go test ${args} ./src/...
+
+local-config:
+	@test -f .env || cp config.example .env
 
 clean:
 	rm -rf $(OUTPUT_DIR)
 
-serve:
-	OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_METRICS_OTLP_ENDPOINT=localhost:9090 go run src/cmd/server/main.go
 
-client:
-	OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_METRICS_OTLP_ENDPOINT=localhost:9090 go run src/cmd/client/main.go
+serve: local-config
+	go run src/cmd/server/main.go
+
+client: local-config
+	go run src/cmd/client/main.go
 
 deps:
 	@echo "Downloading Go dependencies..."

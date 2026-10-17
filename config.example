@@ -6,7 +6,11 @@ PORT=8020
 
 # HTTP Client Configuration
 HTTP_PORT=8080
-GRPC_SERVER_ADDR=grpc-server:8020
+GRPC_SERVER_ADDR=localhost:8020
+
+# OpenTelemetry
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+OTEL_METRICS_OTLP_ENDPOINT=localhost:9090
 
 # Timezone
 TZ=UTC

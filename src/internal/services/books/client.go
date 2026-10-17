@@ -6,7 +6,6 @@ package books
 import (
 	"context"
 	"log/slog"
-	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -42,16 +41,10 @@ type GRPCClient struct {
 }
 
 // NewGRPCClient creates new instance of grpc client
-func NewGRPCClient() (*GRPCClient, error) {
+func NewGRPCClient(grpcServerAddr string) (*GRPCClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
-	}
-
-	// Get gRPC server address from environment variable, default to localhost:8020
-	grpcServerAddr := "localhost:8020"
-	if addr := os.Getenv("GRPC_SERVER_ADDR"); addr != "" {
-		grpcServerAddr = addr
 	}
 
 	slog.Info("Connecting to gRPC server", slog.String("address", grpcServerAddr))
