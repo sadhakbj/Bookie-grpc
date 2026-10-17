@@ -46,7 +46,7 @@ Access the services:
 curl http://localhost:8080/books
 
 # Get book by ID
-curl http://localhost:8080/books/1234
+curl http://localhost:8080/books/0199e26a-2951-7000-8000-000000000001
 ```
 
 ## Architecture

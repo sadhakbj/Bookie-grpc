@@ -21,6 +21,8 @@ func HandleGRPCError(w http.ResponseWriter, err error) {
 func GrpcErrorToHTTPStatus(err error) (int, string) {
 	if st, ok := status.FromError(err); ok {
 		switch st.Code() {
+		case codes.InvalidArgument:
+			return http.StatusBadRequest, "Invalid request"
 		case codes.NotFound:
 			return http.StatusNotFound, "Item not found"
 		default:

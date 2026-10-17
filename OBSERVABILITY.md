@@ -45,7 +45,7 @@ Only pre-existing old containers in your Docker history are affected by the 24h 
 
 - **Metrics (home dashboard)** — request rate, error rate (by gRPC status code), p50/p95/p99, client-side rate/errors. PromQL under the hood: `rpc_server_call_duration_seconds_count{service_name="bookie-grpc", rpc_response_status_code="OK"}`, `histogram_quantile(..., rpc_server_call_duration_seconds_bucket)`.
 - **Logs (bottom panel of the same dashboard)** — live Loki stream, no query to type. App records are JSON with the `service` field promoted to a label; `trace_id`/`span_id` appear in lines when the context carries a span.
-- **Traces (Jaeger)** — hit `http://localhost:8080/books/1234`, then find the trace: `Bookie/GetByID` spans under both `bookie-client` and `bookie-grpc`, chained via W3C trace context propagation.
+- **Traces (Jaeger)** — hit `http://localhost:8080/books/0199e26a-2951-7000-8000-000000000001`, then find the trace: `Bookie/GetByID` spans under both `bookie-client` and `bookie-grpc`, chained via W3C trace context propagation.
 - If you ever need raw LogQL: `{source="docker"} | json service | service="bookie-grpc"`.
 
 ## Configuration

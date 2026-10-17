@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"testing"
+	"uuid"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,15 +26,20 @@ func TestBookieServiceGetByID(t *testing.T) {
 			wantCode: codes.InvalidArgument,
 		},
 		{
-			name:      "existing book is returned",
-			id:        "1234",
-			wantCode:  codes.OK,
-			wantTitle: "Harry Potter",
+			name:     "malformed id is invalid argument",
+			id:       "1234",
+			wantCode: codes.InvalidArgument,
 		},
 		{
-			name:     "unknown id is not found",
-			id:       "9999",
+			name:     "valid unknown uuid is not found",
+			id:       "0199e26a-2951-7000-8000-00000000dead",
 			wantCode: codes.NotFound,
+		},
+		{
+			name:      "seeded book is returned",
+			id:        seedHarryPotterID,
+			wantCode:  codes.OK,
+			wantTitle: "Harry Potter",
 		},
 	}
 
@@ -56,7 +62,7 @@ func TestBookieServiceCreateBook(t *testing.T) {
 	defer func() { books = origBooks }()
 
 	svc := &bookieService{}
-	res, err := svc.CreateBook(context.Background(), &bookiePb.CreateBookRequest{
+	first, err := svc.CreateBook(context.Background(), &bookiePb.CreateBookRequest{
 		Title:  "New Book",
 		Price:  50,
 		Author: "New Author",
@@ -65,13 +71,29 @@ func TestBookieServiceCreateBook(t *testing.T) {
 		t.Fatalf("CreateBook returned error: %v", err)
 	}
 
-	if res.GetBook().GetTitle() != "New Book" {
-		t.Errorf("title = %q, want %q", res.GetBook().GetTitle(), "New Book")
+	if first.GetBook().GetTitle() != "New Book" {
+		t.Errorf("title = %q, want %q", first.GetBook().GetTitle(), "New Book")
 	}
-	if res.GetBook().GetId() != "8910" {
-		t.Errorf("id = %q, want %q", res.GetBook().GetId(), "8910")
+	if _, err := uuid.Parse(first.GetBook().GetId()); err != nil {
+		t.Errorf("id %q is not a parseable uuid: %v", first.GetBook().GetId(), err)
+	}
+	parsed, err := uuid.Parse(first.GetBook().GetId())
+	if err != nil || parsed.String() != first.GetBook().GetId() {
+		t.Errorf("id = %q, want canonical lowercase uuid", first.GetBook().GetId())
 	}
 	if got := len(books); got != len(origBooks)+1 {
 		t.Errorf("books length = %d, want %d", got, len(origBooks)+1)
+	}
+
+	second, err := svc.CreateBook(context.Background(), &bookiePb.CreateBookRequest{
+		Title:  "Another Book",
+		Price:  75,
+		Author: "New Author",
+	})
+	if err != nil {
+		t.Fatalf("second CreateBook returned error: %v", err)
+	}
+	if second.GetBook().GetId() == first.GetBook().GetId() {
+		t.Errorf("consecutive CreateBook calls produced identical id %q", first.GetBook().GetId())
 	}
 }

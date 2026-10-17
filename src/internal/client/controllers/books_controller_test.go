@@ -23,24 +23,39 @@ func decodeBody(t *testing.T, rr *httptest.ResponseRecorder) map[string]any {
 }
 
 func TestFetchBookByID(t *testing.T) {
+	const testBookID = "0199e26a-2951-7000-8000-000000000001"
+
 	tests := []struct {
 		name         string
+		id           string
 		mockResponse func(*books.MockClient)
 		wantStatus   int
 		wantMsg      string
 	}{
 		{
 			name: "fetches book by id",
+			id:   testBookID,
 			mockResponse: func(mc *books.MockClient) {
 				mc.EXPECT().GetByID(gomock.Any()).Return(&books.Book{
-					ID: "1234", Title: "Harry Potter", Price: 120, Author: "JK Rowling",
+					ID: testBookID, Title: "Harry Potter", Price: 120, Author: "JK Rowling",
 				}, nil)
 			},
 			wantStatus: http.StatusOK,
 			wantMsg:    "Fetched data successfully",
 		},
 		{
+			name: "malformed uuid is mapped to 400",
+			id:   "1234",
+			mockResponse: func(mc *books.MockClient) {
+				mc.EXPECT().GetByID(gomock.Any()).
+					Return(nil, status.Error(codes.InvalidArgument, "Invalid id 1234"))
+			},
+			wantStatus: http.StatusBadRequest,
+			wantMsg:    "Invalid request",
+		},
+		{
 			name: "not found is mapped to 404",
+			id:   testBookID,
 			mockResponse: func(mc *books.MockClient) {
 				mc.EXPECT().GetByID(gomock.Any()).
 					Return(nil, status.Error(codes.NotFound, "Book with ID 999 not found"))
@@ -50,6 +65,7 @@ func TestFetchBookByID(t *testing.T) {
 		},
 		{
 			name: "unavailable is mapped to 500",
+			id:   testBookID,
 			mockResponse: func(mc *books.MockClient) {
 				mc.EXPECT().GetByID(gomock.Any()).
 					Return(nil, status.Error(codes.Unavailable, "server down"))
@@ -66,8 +82,8 @@ func TestFetchBookByID(t *testing.T) {
 			controller := NewBookController(mockClient)
 
 			rr := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/books/1234", nil)
-			req.SetPathValue("id", "1234")
+			req := httptest.NewRequest(http.MethodGet, "/books/"+tt.id, nil)
+			req.SetPathValue("id", tt.id)
 
 			controller.FetchBookByID(rr, req)
 
@@ -90,8 +106,8 @@ func TestFetchAllBooks(t *testing.T) {
 	t.Run("returns list of books", func(t *testing.T) {
 		mockClient := books.NewMockClient(gomock.NewController(t))
 		mockClient.EXPECT().GetBooks().Return([]*books.Book{
-			{ID: "1", Title: "Harry Potter", Price: 120, Author: "JK Rowling"},
-			{ID: "2", Title: "Game of life", Price: 450, Author: "Author Two"},
+			{ID: "0199e26a-2951-7000-8000-000000000001", Title: "Harry Potter", Price: 120, Author: "JK Rowling"},
+			{ID: "0199e26a-2951-7000-8000-000000000002", Title: "Game of life", Price: 450, Author: "Author Two"},
 		}, nil)
 		controller := NewBookController(mockClient)
 

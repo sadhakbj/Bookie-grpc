@@ -99,7 +99,7 @@ curl http://localhost:8080/books
 ### Get Book by ID
 
 ```bash
-curl http://localhost:8080/books/1234
+curl http://localhost:8080/books/0199e26a-2951-7000-8000-000000000001
 ```
 
 ## 🐳 Docker
@@ -155,7 +155,7 @@ kubectl get pods -n bookie -w
 # 5. Test the API
 kubectl port-forward -n bookie svc/http-client 8080:8080
 curl http://localhost:8080/books
-curl http://localhost:8080/books/1234
+curl http://localhost:8080/books/0199e26a-2951-7000-8000-000000000001
 ```
 
 > 💡 **Offline development:** the manifests use `imagePullPolicy: IfNotPresent`, so locally built images are used when present — otherwise pods pull the latest images published to ghcr.io by CI:
