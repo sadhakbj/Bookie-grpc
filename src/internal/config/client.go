@@ -7,6 +7,7 @@ type ClientConfig struct {
 	HTTPPort            string `env:"HTTP_PORT,default=8080" validate:"required,port"`
 	GRPCServerAddr      string `env:"GRPC_SERVER_ADDR,default=localhost:8020" validate:"required,hostname_port"`
 	OTLPEndpoint        string `env:"OTEL_EXPORTER_OTLP_ENDPOINT,default=localhost:4317" validate:"required,hostname_port"`
+	OTLPLogsEndpoint    string `env:"OTEL_LOGS_OTLP_ENDPOINT,default=localhost:31081" validate:"required,hostname_port"`
 	OTLPMetricsEndpoint string `env:"OTEL_METRICS_OTLP_ENDPOINT,default=localhost:4318" validate:"required,hostname_port"`
 }
 

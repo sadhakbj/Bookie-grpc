@@ -1,4 +1,4 @@
-// Package utils provides telemetry setup (traces + metrics) for the services.
+// Package utils provides telemetry setup (traces + metrics + logs) for the services.
 package utils
 
 import (
@@ -7,11 +7,13 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
-
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -26,13 +28,15 @@ var (
 // TelemetryConfig contains the exporter endpoints used by telemetry providers.
 type TelemetryConfig struct {
 	OTLPEndpoint        string
+	OTLPLogsEndpoint    string
 	OTLPMetricsEndpoint string
 }
 
-// InitializeTelemetry wires OpenTelemetry tracer and meter providers.
-// Traces go over OTLP gRPC (Jaeger), metrics over OTLP HTTP to the
-// Prometheus OTLP receiver. It is safe to call once per process.
-func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName string, config TelemetryConfig) error {
+// InitializeTelemetry wires OpenTelemetry tracer, meter and logger providers and
+// returns the logger that mirrors records to OTLP when OTLPLogsEndpoint is set.
+// Exporters are fire-and-forget: an unreachable endpoint drops batches without
+// affecting application behavior. It is safe to call once per process.
+func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName string, config TelemetryConfig) (*slog.Logger, error) {
 	res, err := sdkresource.Merge(
 		sdkresource.Default(),
 		sdkresource.NewSchemaless(
@@ -40,7 +44,7 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 		),
 	)
 	if err != nil {
-		return err
+		return logger, err
 	}
 
 	traceExp, err := otlptracegrpc.New(ctx,
@@ -48,7 +52,7 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 		otlptracegrpc.WithEndpoint(config.OTLPEndpoint),
 	)
 	if err != nil {
-		return err
+		return logger, err
 	}
 
 	tracerProvider := sdktrace.NewTracerProvider(
@@ -57,15 +61,15 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 	)
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
+	shutdownFns = append(shutdownFns, tracerProvider.Shutdown)
 
-	metricOpts := []otlpmetrichttp.Option{
+	metricExporter, err := otlpmetrichttp.New(ctx,
 		otlpmetrichttp.WithInsecure(),
+		otlpmetrichttp.WithEndpoint(config.OTLPMetricsEndpoint),
 		otlpmetrichttp.WithURLPath("/api/v1/otlp/v1/metrics"),
-	}
-	metricOpts = append(metricOpts, otlpmetrichttp.WithEndpoint(config.OTLPMetricsEndpoint))
-	metricExporter, err := otlpmetrichttp.New(ctx, metricOpts...)
+	)
 	if err != nil {
-		return err
+		return logger, err
 	}
 
 	meterProvider := sdkmetric.NewMeterProvider(
@@ -74,18 +78,36 @@ func InitializeTelemetry(ctx context.Context, logger *slog.Logger, serviceName s
 			sdkmetric.WithInterval(15*time.Second))),
 	)
 	otel.SetMeterProvider(meterProvider)
+	shutdownFns = append(shutdownFns, meterProvider.Shutdown)
 
-	shutdownFns = append(shutdownFns,
-		func(ctx context.Context) error { return tracerProvider.Shutdown(ctx) },
-		func(ctx context.Context) error { return meterProvider.Shutdown(ctx) },
-	)
+	readyLogger := logger
+	if config.OTLPLogsEndpoint != "" {
+		logExporter, err := otlploggrpc.New(ctx,
+			otlploggrpc.WithInsecure(),
+			otlploggrpc.WithEndpoint(config.OTLPLogsEndpoint),
+		)
+		if err != nil {
+			return logger, err
+		}
 
-	logger.Info("Telemetry initialized",
-		"service", serviceName,
+		loggerProvider := sdklog.NewLoggerProvider(
+			sdklog.WithResource(res),
+			sdklog.WithProcessor(sdklog.NewBatchProcessor(logExporter)),
+		)
+		shutdownFns = append(shutdownFns, loggerProvider.Shutdown)
+
+		readyLogger = slog.New(newSlogFanout(
+			logger.Handler(),
+			otelslog.NewHandler(serviceName, otelslog.WithLoggerProvider(loggerProvider)),
+		))
+	}
+
+	readyLogger.Info("Telemetry initialized",
 		"otlp_endpoint", config.OTLPEndpoint,
+		"logs_endpoint", config.OTLPLogsEndpoint,
 		"metrics_endpoint", config.OTLPMetricsEndpoint,
 	)
-	return nil
+	return readyLogger, nil
 }
 
 // ShutdownTelemetry flushes and stops all telemetry providers. It is safe to

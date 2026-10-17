@@ -40,27 +40,30 @@ Only pre-existing old containers in your Docker history are affected by the 24h 
 | Prometheus | http://localhost:9090 |
 | Loki | http://localhost:3100 |
 | Alloy | http://localhost:12345 |
+| Alloy OTLP log receiver | localhost:31081 (gRPC), localhost:31082 (HTTP) |
 
 ## What to look at
 
 - **Metrics (home dashboard)** — request rate, error rate (by gRPC status code), p50/p95/p99, client-side rate/errors. PromQL under the hood: `rpc_server_call_duration_seconds_count{service_name="bookie-grpc", rpc_response_status_code="OK"}`, `histogram_quantile(..., rpc_server_call_duration_seconds_bucket)`.
-- **Logs (bottom panel of the same dashboard)** — live Loki stream, no query to type. App records are JSON with the `service` field promoted to a label; `trace_id`/`span_id` appear in lines when the context carries a span.
+- **Logs (bottom panel of the same dashboard)** — live Loki stream, no query to type. Apps push logs over OTLP (see ADR 0001), so records arrive with a `service_name` label on any runtime — `make serve`/`make client` included; `trace_id`/`span_id` appear in lines when the context carries a span.
 - **Traces (Jaeger)** — hit `http://localhost:8080/books/0199e26a-2951-7000-8000-000000000001`, then find the trace: `Bookie/GetByID` spans under both `bookie-client` and `bookie-grpc`, chained via W3C trace context propagation.
-- If you ever need raw LogQL: `{source="docker"} | json service | service="bookie-grpc"`.
+- If you ever need raw LogQL: `{service_name="bookie-grpc"}`.
 
 ## Configuration
 
 Standard `OTEL_*` env vars are honored by the app (see `src/internal/utils/telemetry.go`):
 
 - `OTEL_EXPORTER_OTLP_ENDPOINT` — OTLP gRPC receiver for traces (default `localhost:4317`; set to `jaeger:4317` inside compose).
+- `OTEL_LOGS_OTLP_ENDPOINT` — OTLP gRPC receiver for app logs, ingested into Loki by Alloy (default `localhost:31081`; set to `alloy:31081` inside compose).
 - `OTEL_METRICS_OTLP_ENDPOINT` — OTLP HTTP receiver for metrics (default `localhost:4318`; set to `prometheus:9090` inside compose, wiring exports to `/api/v1/otlp/v1/metrics`).
 
 Grafana-specific env in compose: `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH` pins the RED dashboard as home; admin credentials via `GF_SECURITY_ADMIN_*`; anonymous Viewer access enabled for zero-click dev use.
 
 ## Files
 
-- `src/internal/utils/telemetry.go` — provider setup (traces → OTLP gRPC, metrics → OTLP HTTP) + `ShutdownTelemetry` wired into graceful shutdown
+- `src/internal/utils/telemetry.go` — provider setup (traces → OTLP gRPC, metrics → OTLP HTTP, logs → OTLP gRPC via `otelslog` bridge) + `ShutdownTelemetry` wired into graceful shutdown
 - `src/internal/utils/trace_logger.go` — slog handler enriching logs with trace context
+- `src/internal/utils/slog_fanout.go` — fanout handler mirroring slog records to stdout and OTLP
 - `observability/grafana/provisioning/` — datasource + dashboard provisioning definitions
 - `observability/grafana/dashboards/grpc-red.json` — the RED dashboard + logs panel (compiled Grafana format)
 - `observability/prometheus/prometheus.yml` — OTLP receiver config

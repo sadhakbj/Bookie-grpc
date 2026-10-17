@@ -172,7 +172,7 @@
           "refId": "A",
           "datasource": "Loki",
           "queryType": "range",
-          "expr": "{source=\"docker\"} | json service | service=~\"${service:regex}\""
+          "expr": "{service_name=~\"${service:regex}\"}"
         }
       ]
     }
