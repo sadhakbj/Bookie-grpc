@@ -19,6 +19,12 @@ func TestGrpcErrorToHTTPStatus(t *testing.T) {
 		wantMessage string
 	}{
 		{
+			name:        "InvalidArgument maps to 400",
+			err:         status.Error(codes.InvalidArgument, "invalid uuid"),
+			wantStatus:  http.StatusBadRequest,
+			wantMessage: "Invalid request",
+		},
+		{
 			name:        "NotFound maps to 404",
 			err:         status.Error(codes.NotFound, "book not found"),
 			wantStatus:  http.StatusNotFound,

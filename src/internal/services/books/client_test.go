@@ -13,16 +13,19 @@ import (
 const (
 	harryPotterTitle = "Harry Potter"
 	jkRowlingAuthor  = "JK Rowling"
+
+	testBookID  = "0199e26a-2951-7000-8000-000000000001"
+	testBook2ID = "0199e26a-2951-7000-8000-000000000002"
 )
 
 func TestGetByID(t *testing.T) {
 	t.Run("maps proto response to Book", func(t *testing.T) {
 		mockClient := bookiePb.NewMockBookieClient(gomock.NewController(t))
 		mockClient.EXPECT().
-			GetByID(gomock.Any(), &bookiePb.GetByIDRequest{Id: "1234"}).
+			GetByID(gomock.Any(), &bookiePb.GetByIDRequest{Id: testBookID}).
 			Return(&bookiePb.GetByIDResponse{
 				Book: &bookiePb.Book{
-					Id:          "1234",
+					Id:          testBookID,
 					Title:       harryPotterTitle,
 					Price:       120,
 					Author:      jkRowlingAuthor,
@@ -31,12 +34,12 @@ func TestGetByID(t *testing.T) {
 			}, nil)
 		client := NewGRPCClientWithClient(mockClient)
 
-		book, err := client.GetByID("1234")
+		book, err := client.GetByID(testBookID)
 		if err != nil {
 			t.Fatalf("GetByID returned error: %v", err)
 		}
 		want := Book{
-			ID:          "1234",
+			ID:          testBookID,
 			Title:       harryPotterTitle,
 			Price:       120,
 			Author:      jkRowlingAuthor,
@@ -70,8 +73,8 @@ func TestGetBooks(t *testing.T) {
 		mockClient.EXPECT().
 			ListBooks(gomock.Any(), &bookiePb.ListBookRequest{PerPage: 10}).
 			Return(&bookiePb.ListBooksResponse{Books: []*bookiePb.Book{
-				{Id: "1", Title: harryPotterTitle, Price: 120, Author: jkRowlingAuthor, Description: "lovely"},
-				{Id: "2", Title: "Game of life", Price: 450, Author: "Author Two", Description: "test"},
+				{Id: testBookID, Title: harryPotterTitle, Price: 120, Author: jkRowlingAuthor, Description: "lovely"},
+				{Id: testBook2ID, Title: "Game of life", Price: 450, Author: "Author Two", Description: "test"},
 			}}, nil)
 		client := NewGRPCClientWithClient(mockClient)
 
@@ -82,7 +85,7 @@ func TestGetBooks(t *testing.T) {
 		if len(books) != 2 {
 			t.Fatalf("got %d books, want 2", len(books))
 		}
-		if books[0].ID != "1" || books[0].Title != harryPotterTitle || books[1].Price != 450 {
+		if books[0].ID != testBookID || books[0].Title != harryPotterTitle || books[1].Price != 450 {
 			t.Errorf("mapped books = %+v, want proto values", books)
 		}
 	})

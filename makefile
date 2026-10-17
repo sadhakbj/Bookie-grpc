@@ -173,10 +173,11 @@ obs: docker-build docker-up observability-up
 .PHONY: traffic
 traffic:
 	@echo "🚗 Generating traffic for 60s..."
-	@for i in $$(seq 1 30); do \
-		curl -s http://$${BOOKIE_HOST:-localhost}:8080/books/1234 > /dev/null; \
+	@book_id=$$(curl -s http://$${BOOKIE_HOST:-localhost}:8080/books | \
+		grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -n 1); \
+	for i in $$(seq 1 30); do \
+		curl -s http://$${BOOKIE_HOST:-localhost}:8080/books/$$book_id > /dev/null; \
 		curl -s http://$${BOOKIE_HOST:-localhost}:8080/books > /dev/null; \
-		curl -s "http://$${BOOKIE_HOST:-localhost}:8080/books/$$(( ( $$RANDOM % 9000 ) + 1000 ))" > /dev/null; \
 		sleep 1; \
 	done
 	@echo "✅ Done — check Grafana/Jaeger"

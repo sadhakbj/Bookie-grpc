@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"uuid"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -24,16 +25,23 @@ import (
 	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
 
+// Fixed UUIDv7 seed ids so the in-memory seed data stays deterministic;
+// tests use the same literals. Generate more with uuid.NewV7() if needed.
+const (
+	seedHarryPotterID = "0199e26a-2951-7000-8000-000000000001"
+	seedGameOfLifeID  = "0199e26a-2951-7000-8000-000000000002"
+)
+
 var books = []*bookiePb.Book{
 	{
-		Id:          "1234",
+		Id:          seedHarryPotterID,
 		Title:       "Harry Potter",
 		Price:       120,
 		Author:      "JK Rowling",
 		Description: "a lovely book",
 	},
 	{
-		Id:          "4567",
+		Id:          seedGameOfLifeID,
 		Title:       "Game of life",
 		Price:       450,
 		Author:      "Author Two",
@@ -53,7 +61,7 @@ func (s *bookieService) ListBooks(_ context.Context, req *bookiePb.ListBookReque
 
 func (s *bookieService) CreateBook(_ context.Context, input *bookiePb.CreateBookRequest) (*bookiePb.CreateBookResponse, error) {
 	newBook := &bookiePb.Book{
-		Id:          "8910",
+		Id:          uuid.NewV7().String(),
 		Title:       input.Title,
 		Price:       input.Price,
 		Author:      input.Author,
@@ -70,6 +78,9 @@ func (s *bookieService) GetByID(_ context.Context, input *bookiePb.GetByIDReques
 	fmt.Println("input is", input)
 	if input.GetId() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "Please provide id")
+	}
+	if _, err := uuid.Parse(input.GetId()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid id %s", input.GetId())
 	}
 	for _, book := range books {
 		if book.Id == input.Id {
