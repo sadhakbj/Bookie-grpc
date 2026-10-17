@@ -2,6 +2,11 @@ name: labeler
 
 on: [pull_request]
 
+permissions:
+  contents: read
+  # The size labeler updates PR labels
+  pull-requests: write
+
 jobs:
   labeler:
     runs-on: ubuntu-latest
