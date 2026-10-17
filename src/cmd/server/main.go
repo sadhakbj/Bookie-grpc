@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"uuid"
 
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
+	"github.com/sadhakbj/bookie-grpc/src/internal/config"
 	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
 
@@ -90,11 +92,15 @@ func (s *bookieService) GetByID(_ context.Context, input *bookiePb.GetByIDReques
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8020"
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file: ", err)
 	}
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+
+	appConfig, err := config.LoadServerConfig()
+	if err != nil {
+		log.Fatal("Invalid server configuration: ", err)
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", appConfig.Port))
 	if err != nil {
 		log.Fatal("Could not listen: ", err)
 	}
@@ -103,7 +109,10 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := utils.InitializeTelemetry(ctx, logger, "bookie-grpc"); err != nil {
+	if err := utils.InitializeTelemetry(ctx, logger, "bookie-grpc", utils.TelemetryConfig{
+		OTLPEndpoint:        appConfig.OTLPEndpoint,
+		OTLPMetricsEndpoint: appConfig.OTLPMetricsEndpoint,
+	}); err != nil {
 		logger.Error("Failed to initialize telemetry: %v", "error", err)
 	}
 	defer utils.ShutdownTelemetry(context.Background(), logger)
@@ -126,7 +135,7 @@ func main() {
 
 	// Start the server in a goroutine
 	go func() {
-		logger.Info("Successfully started the server on port: " + port)
+		logger.Info("Successfully started the server on port: " + appConfig.Port)
 		if e := grpcServer.Serve(listener); e != nil {
 			logger.Error("Failed to serve: %v", "error", e)
 		}

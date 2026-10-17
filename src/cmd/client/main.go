@@ -3,13 +3,16 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/sadhakbj/bookie-grpc/src/internal/client/controllers"
+	"github.com/sadhakbj/bookie-grpc/src/internal/config"
 	"github.com/sadhakbj/bookie-grpc/src/internal/services/books"
 	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
@@ -18,16 +21,26 @@ var bookClient *books.GRPCClient
 
 func main() {
 	logger := utils.InitializeLogger("bookie-client", true)
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file: ", err)
+	}
+
+	appConfig, err := config.LoadClientConfig()
+	if err != nil {
+		log.Fatal("Invalid client configuration: ", err)
+	}
 
 	telemetryCtx, telemetryCancel := context.WithCancel(context.Background())
 	defer telemetryCancel()
-	if err := utils.InitializeTelemetry(telemetryCtx, logger, "bookie-client"); err != nil {
+	if err := utils.InitializeTelemetry(telemetryCtx, logger, "bookie-client", utils.TelemetryConfig{
+		OTLPEndpoint:        appConfig.OTLPEndpoint,
+		OTLPMetricsEndpoint: appConfig.OTLPMetricsEndpoint,
+	}); err != nil {
 		logger.Error("Failed to initialize telemetry: %v", "error", err)
 	}
 	defer utils.ShutdownTelemetry(context.Background(), logger)
 
-	var err error
-	bookClient, err = books.NewGRPCClient()
+	bookClient, err = books.NewGRPCClient(appConfig.GRPCServerAddr)
 	if err != nil {
 		logger.Error("Failed to initialize BookClient: %v", "error", err)
 	}
@@ -58,15 +71,9 @@ func main() {
 		utils.JSONResponse(w, http.StatusServiceUnavailable, false, "gRPC upstream not ready", nil)
 	})
 
-	// Get HTTP server port from environment variable, default to 8080
-	httpPort := os.Getenv("HTTP_PORT")
-	if httpPort == "" {
-		httpPort = "8080"
-	}
-
 	// Create HTTP server
 	server := &http.Server{
-		Addr:    ":" + httpPort,
+		Addr:    ":" + appConfig.HTTPPort,
 		Handler: mux,
 	}
 
@@ -76,7 +83,7 @@ func main() {
 
 	// Start the HTTP server in a goroutine
 	go func() {
-		logger.Info("Server started on port: " + httpPort)
+		logger.Info("Server started on port: " + appConfig.HTTPPort)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Failed to start server: %v", "error", err)
 		}

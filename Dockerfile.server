@@ -32,6 +32,7 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
 # Copy the binary from builder (build.sh outputs to ./build/)
 COPY --from=builder /build/build/server /server
+COPY --from=builder /build/config.example /.env
 
 # Use nonroot user (UID 65532)
 USER nonroot:nonroot
