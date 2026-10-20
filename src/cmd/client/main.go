@@ -3,6 +3,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +23,7 @@ var bookClient *books.GRPCClient
 
 func main() {
 	logger := utils.InitializeLogger("bookie-client", true)
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Fatal("Error loading .env file: ", err)
 	}
 
@@ -32,10 +34,12 @@ func main() {
 
 	telemetryCtx, telemetryCancel := context.WithCancel(context.Background())
 	defer telemetryCancel()
-	if err := utils.InitializeTelemetry(telemetryCtx, logger, "bookie-client", utils.TelemetryConfig{
+	logger, err = utils.InitializeTelemetry(telemetryCtx, logger, "bookie-client", utils.TelemetryConfig{
 		OTLPEndpoint:        appConfig.OTLPEndpoint,
+		OTLPLogsEndpoint:    appConfig.OTLPLogsEndpoint,
 		OTLPMetricsEndpoint: appConfig.OTLPMetricsEndpoint,
-	}); err != nil {
+	})
+	if err != nil {
 		logger.Error("Failed to initialize telemetry: %v", "error", err)
 	}
 	defer utils.ShutdownTelemetry(context.Background(), logger)

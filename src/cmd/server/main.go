@@ -3,7 +3,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"os"
@@ -92,7 +94,7 @@ func (s *bookieService) GetByID(_ context.Context, input *bookiePb.GetByIDReques
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Fatal("Error loading .env file: ", err)
 	}
 
@@ -109,10 +111,12 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err := utils.InitializeTelemetry(ctx, logger, "bookie-grpc", utils.TelemetryConfig{
+	logger, err = utils.InitializeTelemetry(ctx, logger, "bookie-grpc", utils.TelemetryConfig{
 		OTLPEndpoint:        appConfig.OTLPEndpoint,
+		OTLPLogsEndpoint:    appConfig.OTLPLogsEndpoint,
 		OTLPMetricsEndpoint: appConfig.OTLPMetricsEndpoint,
-	}); err != nil {
+	})
+	if err != nil {
 		logger.Error("Failed to initialize telemetry: %v", "error", err)
 	}
 	defer utils.ShutdownTelemetry(context.Background(), logger)

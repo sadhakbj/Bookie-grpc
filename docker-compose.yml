@@ -12,6 +12,7 @@ services:
       - PORT=8020
       - TZ=UTC
       - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+      - OTEL_LOGS_OTLP_ENDPOINT=alloy:31081
       - OTEL_METRICS_OTLP_ENDPOINT=prometheus:9090
     networks:
       - bookie-network
@@ -56,6 +57,7 @@ services:
       - GRPC_SERVER_ADDR=grpc-server:8020
       - TZ=UTC
       - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+      - OTEL_LOGS_OTLP_ENDPOINT=alloy:31081
       - OTEL_METRICS_OTLP_ENDPOINT=prometheus:9090
     networks:
       - bookie-network
@@ -135,13 +137,13 @@ services:
       - --storage.path=/var/lib/alloy/data
     volumes:
       - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - loki
       - jaeger
       - prometheus
     ports:
       - "12345:12345"
+      - "31081:31081"
     networks:
       - bookie-network
 
