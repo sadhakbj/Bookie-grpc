@@ -9,10 +9,11 @@ import (
 	"google.golang.org/grpc/status"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
+	"github.com/sadhakbj/bookie-grpc/src/internal/bookstore"
 )
 
 func TestBookieServiceGetByID(t *testing.T) {
-	svc := &bookieService{}
+	svc := &bookieService{store: bookstore.NewInMemoryRepository(bookstore.SeedBooks())}
 
 	tests := []struct {
 		name      string
@@ -37,9 +38,9 @@ func TestBookieServiceGetByID(t *testing.T) {
 		},
 		{
 			name:      "seeded book is returned",
-			id:        seedHarryPotterID,
+			id:        bookstore.SeedHarryPotterID,
 			wantCode:  codes.OK,
-			wantTitle: "Harry Potter",
+			wantTitle: "Harry Potter and the Philosopher's Stone",
 		},
 	}
 
@@ -58,10 +59,10 @@ func TestBookieServiceGetByID(t *testing.T) {
 }
 
 func TestBookieServiceCreateBook(t *testing.T) {
-	origBooks := books
-	defer func() { books = origBooks }()
+	seed := bookstore.SeedBooks()
+	store := bookstore.NewInMemoryRepository(seed)
+	svc := &bookieService{store: store}
 
-	svc := &bookieService{}
 	first, err := svc.CreateBook(context.Background(), &bookiePb.CreateBookRequest{
 		Title:  "New Book",
 		Price:  50,
@@ -81,8 +82,8 @@ func TestBookieServiceCreateBook(t *testing.T) {
 	if err != nil || parsed.String() != first.GetBook().GetId() {
 		t.Errorf("id = %q, want canonical lowercase uuid", first.GetBook().GetId())
 	}
-	if got := len(books); got != len(origBooks)+1 {
-		t.Errorf("books length = %d, want %d", got, len(origBooks)+1)
+	if got := len(store.List()); got != len(seed)+1 {
+		t.Errorf("books length = %d, want %d", got, len(seed)+1)
 	}
 
 	second, err := svc.CreateBook(context.Background(), &bookiePb.CreateBookRequest{
