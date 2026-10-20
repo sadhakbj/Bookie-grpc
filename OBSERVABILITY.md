@@ -11,7 +11,7 @@ The services are instrumented with [OpenTelemetry](https://opentelemetry.io/) �
 | Instrumentation | OpenTelemetry Go SDK + `otelgrpc` stats handlers | Auto spans + RED metrics for every RPC, server and client side — no per-handler code |
 | Traces | Jaeger (all-in-one) | OTLP gRPC receiver on :4317 |
 | Metrics | Prometheus | OTLP receiver enabled, translated to standard `rpc_*` PromQL |
-| Logs | Loki + Grafana Alloy | Alloy ships every container's stdout; entries older than 24h are dropped (Docker replays stale history on startup) |
+| Logs | Loki + Grafana Alloy | Apps push structured logs over OTLP to an Alloy receiver, which writes them to Loki |
 | Dashboards | Grafana | Datasources + gRPC RED dashboard + live logs panel provisioned at startup |
 
 ## Installation guide (fresh clone → running)
@@ -29,7 +29,7 @@ Open **http://localhost:3000** — you land directly on the gRPC RED dashboard: 
 
 Stop: `make docker-down` (app) / `make observability-down` (stack). Logs: `make docker-logs` / `make observability-logs`.
 
-Only pre-existing old containers in your Docker history are affected by the 24h log-drop filter; app logs are live.
+App logs are mirrored to stdout (`make docker-logs`) and pushed to Loki over OTLP, so the live logs panel works with any runtime — containers, `make serve`, or `make client`.
 
 ## UIs & ports
 
