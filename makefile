@@ -15,12 +15,13 @@ setup:
 	@go mod download
 	@echo "✅ Go dependencies installed"
 	@echo ""
-	@echo "2. Installing protobuf Go plugins..."
+	@echo "2. Installing protobuf Go plugins and code generators..."
 	@export PATH=$$PATH:$$(go env GOPATH)/bin && \
 		go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
 		go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
-		go install go.uber.org/mock/mockgen@latest
-	@echo "✅ Protobuf plugins and mockgen installed"
+		go install go.uber.org/mock/mockgen@latest && \
+		go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+	@echo "✅ Protobuf plugins, mockgen, and sqlc installed"
 	@echo ""
 	@echo "3. Checking protoc..."
 	@which protoc > /dev/null 2>&1 && echo "✅ protoc found" || \
@@ -59,6 +60,17 @@ lint-fix:
 .PHONY: gen/mocks
 gen/mocks:
 	go generate ./...
+
+# Regenerate typed books queries from src/database/queries into
+# src/internal/bookstore/sqlcgen; output is committed.
+.PHONY: gen/sqlc
+gen/sqlc:
+	sqlc generate
+
+# Fail when committed generated code differs from what sqlc would produce.
+.PHONY: check/sqlc
+check/sqlc:
+	sqlc diff
 
 # Run all tests (usage: make test [args="-run TestGrpc -v"])
 .PHONY: test local-config

@@ -88,6 +88,18 @@ make serve     # Terminal 1: Start gRPC server
 make client    # Terminal 2: Start HTTP client
 ```
 
+The gRPC server reads books from MySQL.
+
+```bash
+make mysql-up      # Start MySQL 8 from docker-compose
+make migrate-up    # Apply the schema and demo seed data
+make serve         # Server connects to MySQL, failing fast if it is down
+make client        # BFF in a second terminal
+```
+
+`DB_*` values come from `.env` and default to the docker-compose service. The pool
+allows 10 open / 5 idle connections with a 5-minute lifetime.
+
 ## 📚 API Examples
 
 ### Get All Books
@@ -248,6 +260,8 @@ Details: see [OBSERVABILITY.md](OBSERVABILITY.md).
 # App development
 make setup         # One-time setup (install all dependencies)
 make generate      # Generate protobuf code
+make gen/sqlc      # Regenerate typed MySQL queries (sqlc)
+make check/sqlc    # Fail if committed generated queries are stale (CI)
 make build         # Build binaries
 make serve         # Run gRPC server
 make client        # Run HTTP client

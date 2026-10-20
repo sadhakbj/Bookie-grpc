@@ -23,6 +23,14 @@ jobs:
         run: |
           go mod download
 
+      - name: Install sqlc
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Verify generated queries are current
+        run: make check/sqlc
+
       - name: Build
         run: make build
 

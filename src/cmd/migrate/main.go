@@ -14,8 +14,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"
 
+	"github.com/sadhakbj/bookie-grpc/src/database/migrations"
 	"github.com/sadhakbj/bookie-grpc/src/internal/config"
-	"github.com/sadhakbj/bookie-grpc/src/migrations"
 )
 
 func main() {

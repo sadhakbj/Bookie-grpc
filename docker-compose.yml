@@ -10,12 +10,20 @@ services:
       - "8020:8020"
     environment:
       - PORT=8020
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-bookie}
+      - DB_PASSWORD=${DB_PASSWORD:-bookie}
+      - DB_NAME=${DB_NAME:-bookie}
       - TZ=UTC
       - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
       - OTEL_LOGS_OTLP_ENDPOINT=alloy:31081
       - OTEL_METRICS_OTLP_ENDPOINT=prometheus:9090
     networks:
       - bookie-network
+    depends_on:
+      mysql:
+        condition: service_healthy
     # Security options
     security_opt:
       - no-new-privileges:true
