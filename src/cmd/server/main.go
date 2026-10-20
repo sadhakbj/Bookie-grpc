@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,8 +12,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"uuid"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -78,12 +81,32 @@ func main() {
 	if err != nil {
 		log.Fatal("Invalid server configuration: ", err)
 	}
+
+	dbConfig, err := config.LoadDatabaseConfig()
+	if err != nil {
+		log.Fatal("Invalid database configuration: ", err)
+	}
+	db, err := sql.Open("mysql", dbConfig.DataSourceName())
+	if err != nil {
+		log.Fatal("Could not open MySQL connection: ", err)
+	}
+	defer func() { _ = db.Close() }()
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	pingErr := db.PingContext(pingCtx)
+	pingCancel()
+
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", appConfig.Port))
 	if err != nil {
 		log.Fatal("Could not listen: ", err)
 	}
 
 	logger := utils.InitializeLogger("bookie-grpc", false)
+
+	if pingErr != nil {
+		logger.Warn("MySQL connection not successful", "error", pingErr)
+	} else {
+		logger.Info("MySQL connection successful")
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
