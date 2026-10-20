@@ -35,6 +35,45 @@ func TestValidateRejectsEmptyEndpoint(t *testing.T) {
 	}
 }
 
+func TestLoadDatabaseConfig(t *testing.T) {
+	clearEnvironment(t, "DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME")
+	t.Setenv("DB_HOST", "127.0.0.1")
+	t.Setenv("DB_PORT", "3306")
+	t.Setenv("DB_USER", "root")
+	t.Setenv("DB_PASSWORD", "secret")
+	t.Setenv("DB_NAME", "bookie")
+	got, err := LoadDatabaseConfig()
+	if err != nil {
+		t.Fatalf("LoadDatabaseConfig() error = %v", err)
+	}
+	if got.Host != "127.0.0.1" || got.Port != "3306" || got.User != "root" || got.Name != "bookie" {
+		t.Errorf("LoadDatabaseConfig() = %+v, want env values", got)
+	}
+}
+
+func TestLoadDatabaseConfigRejectsInvalidPort(t *testing.T) {
+	clearEnvironment(t, "DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME")
+	t.Setenv("DB_HOST", "127.0.0.1")
+	t.Setenv("DB_PORT", "65536")
+	t.Setenv("DB_USER", "root")
+	t.Setenv("DB_PASSWORD", "secret")
+	t.Setenv("DB_NAME", "bookie")
+	if _, err := LoadDatabaseConfig(); err == nil {
+		t.Fatal("LoadDatabaseConfig() accepted an out-of-range port")
+	}
+}
+
+func TestLoadDatabaseConfigRejectsMissingHost(t *testing.T) {
+	clearEnvironment(t, "DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME")
+	t.Setenv("DB_PORT", "3306")
+	t.Setenv("DB_USER", "root")
+	t.Setenv("DB_PASSWORD", "secret")
+	t.Setenv("DB_NAME", "bookie")
+	if _, err := LoadDatabaseConfig(); err == nil {
+		t.Fatal("LoadDatabaseConfig() accepted missing DB_HOST")
+	}
+}
+
 func clearEnvironment(t *testing.T, names ...string) {
 	t.Helper()
 	previous := make(map[string]string)

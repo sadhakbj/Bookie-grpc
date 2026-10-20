@@ -10,6 +10,7 @@ resources:
   - grpc-server-service.yaml
   - http-client-deployment.yaml
   - http-client-service.yaml
+  - migrate-job.yaml
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Optional overrides — no need to edit the manifests for common cases.
