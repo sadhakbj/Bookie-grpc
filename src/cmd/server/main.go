@@ -23,42 +23,20 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	bookiePb "github.com/sadhakbj/bookie-grpc/protos/bookie"
+	"github.com/sadhakbj/bookie-grpc/src/internal/bookstore"
 	"github.com/sadhakbj/bookie-grpc/src/internal/config"
 	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
 
-// Fixed UUIDv7 seed ids so the in-memory seed data stays deterministic;
-// tests use the same literals. Generate more with uuid.NewV7() if needed.
-const (
-	seedHarryPotterID = "0199e26a-2951-7000-8000-000000000001"
-	seedGameOfLifeID  = "0199e26a-2951-7000-8000-000000000002"
-)
-
-var books = []*bookiePb.Book{
-	{
-		Id:          seedHarryPotterID,
-		Title:       "Harry Potter",
-		Price:       120,
-		Author:      "JK Rowling",
-		Description: "a lovely book",
-	},
-	{
-		Id:          seedGameOfLifeID,
-		Title:       "Game of life",
-		Price:       450,
-		Author:      "Author Two",
-		Description: "This is a test",
-	},
-}
-
 type bookieService struct {
 	bookiePb.UnimplementedBookieServer
+	store bookstore.Repository
 }
 
 func (s *bookieService) ListBooks(_ context.Context, req *bookiePb.ListBookRequest) (*bookiePb.ListBooksResponse, error) {
 	fmt.Println("this is just a test")
 	fmt.Println(req)
-	return &bookiePb.ListBooksResponse{Books: books}, nil
+	return &bookiePb.ListBooksResponse{Books: s.store.List()}, nil
 }
 
 func (s *bookieService) CreateBook(_ context.Context, input *bookiePb.CreateBookRequest) (*bookiePb.CreateBookResponse, error) {
@@ -69,7 +47,7 @@ func (s *bookieService) CreateBook(_ context.Context, input *bookiePb.CreateBook
 		Author:      input.Author,
 		Description: input.Description,
 	}
-	books = append(books, newBook)
+	s.store.Create(newBook)
 
 	return &bookiePb.CreateBookResponse{
 		Book: newBook,
@@ -84,10 +62,8 @@ func (s *bookieService) GetByID(_ context.Context, input *bookiePb.GetByIDReques
 	if _, err := uuid.Parse(input.GetId()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid id %s", input.GetId())
 	}
-	for _, book := range books {
-		if book.Id == input.Id {
-			return &bookiePb.GetByIDResponse{Book: book}, nil
-		}
+	if book, ok := s.store.GetByID(input.Id); ok {
+		return &bookiePb.GetByIDResponse{Book: book}, nil
 	}
 
 	return nil, status.Errorf(codes.NotFound, "Book with ID %s not found", input.Id)
@@ -125,7 +101,9 @@ func main() {
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
-	bookiePb.RegisterBookieServer(grpcServer, &bookieService{})
+	bookiePb.RegisterBookieServer(grpcServer, &bookieService{
+		store: bookstore.NewInMemoryRepository(bookstore.SeedBooks()),
+	})
 
 	// Register the standard gRPC health checking service so Kubernetes probes
 	// (and grpc-health-probe) can verify liveness/readiness.
