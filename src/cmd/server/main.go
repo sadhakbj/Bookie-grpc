@@ -17,6 +17,7 @@ import (
 	"github.com/sadhakbj/bookie-grpc/src/database"
 	"github.com/sadhakbj/bookie-grpc/src/internal/bookstore"
 	"github.com/sadhakbj/bookie-grpc/src/internal/config"
+	"github.com/sadhakbj/bookie-grpc/src/internal/grpcserver"
 	"github.com/sadhakbj/bookie-grpc/src/internal/utils"
 )
 
@@ -61,7 +62,7 @@ func main() {
 	defer utils.ShutdownTelemetry(context.Background(), logger)
 
 	logger.Info("Creating a new server")
-	server := newGRPCServer(store)
+	server := grpcserver.New(store)
 
 	// Create a channel to receive OS signals
 	signalChan := make(chan os.Signal, 1)
@@ -80,7 +81,7 @@ func main() {
 	logger.Info("Received signal. Initiating graceful shutdown...", "signal", sig)
 
 	// Readiness probes fail immediately while draining.
-	server.markNotServing()
+	server.MarkNotServing()
 
 	logger.Info("Gracefully stopping the gRPC server...")
 	server.GracefulStop()
