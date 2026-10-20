@@ -68,6 +68,21 @@ test:
 local-config:
 	@test -f .env || cp config.example .env
 
+# MySQL dev tooling. Compose and the migrate command read DB_* from .env;
+# change DB_PORT there when a local instance already owns 3306.
+.PHONY: mysql-up mysql-down mysql-logs migrate-up
+mysql-up: local-config
+	docker-compose up -d mysql
+
+mysql-down:
+	docker-compose stop mysql && docker-compose rm -f mysql
+
+mysql-logs:
+	docker-compose logs -f mysql
+
+migrate-up: local-config
+	go run ./src/cmd/migrate
+
 clean:
 	rm -rf $(OUTPUT_DIR)
 
@@ -108,6 +123,7 @@ build:
 docker-build:
 	docker build -t bookie-grpc-server:latest -f Dockerfile.server .
 	docker build -t bookie-http-client:latest -f Dockerfile.client .
+	docker build -t bookie-migrate:latest -f Dockerfile.migrate .
 
 .PHONY: docker-build-server
 docker-build-server:
@@ -116,6 +132,10 @@ docker-build-server:
 .PHONY: docker-build-client
 docker-build-client:
 	docker build -t bookie-http-client:latest -f Dockerfile.client .
+
+.PHONY: docker-build-migrate
+docker-build-migrate:
+	docker build -t bookie-migrate:latest -f Dockerfile.migrate .
 
 .PHONY: docker-up
 docker-up:
@@ -187,5 +207,6 @@ traffic:
 docker-scan:
 	trivy image bookie-grpc-server:latest
 	trivy image bookie-http-client:latest
+	trivy image bookie-migrate:latest
 
 .PHONY: all generate clean

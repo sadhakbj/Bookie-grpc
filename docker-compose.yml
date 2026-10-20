@@ -90,6 +90,37 @@ services:
       retries: 3
       start_period: 10s
 
+  # MySQL 8 (books store; migrations via make migrate-up)
+  mysql:
+    image: mysql:8.4
+    container_name: bookie-mysql
+    restart: unless-stopped
+    # Match accounts by client IP ('bookie'@'%') — reverse DNS on the
+    # Docker bridge makes host-originated connections look like 'localhost'.
+    command: --skip-name-resolve
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    # DB_* come from .env (docker-compose reads it); MYSQL_* bootstrap the
+    # database inside the container.
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=${DB_NAME:-bookie}
+      - MYSQL_USER=${DB_USER:-bookie}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-bookie}
+      - TZ=UTC
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - bookie-network
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
 # --- Observability stack ---
   jaeger:
     image: jaegertracing/all-in-one:1.68.0
@@ -175,3 +206,6 @@ networks:
     ipam:
       config:
         - subnet: 172.25.0.0/16
+
+volumes:
+  mysql-data:

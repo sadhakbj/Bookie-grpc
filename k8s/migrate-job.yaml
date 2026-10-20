@@ -1,0 +1,46 @@
+# One-shot database migration job for the books store
+#
+# Image: ghcr.io/sadhakbj/bookie-migrate (see Dockerfile.migrate).
+# DB_* values are the same placeholders as grpc-server-deployment.yaml until
+# the k8s MySQL manifests land (epic #27, ticket #24, which will move
+# credentials into a Secret). While no MySQL is reachable the job backs off
+# briefly and reports failure; reapply or rerun after every migration commit.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: books-migrate
+  namespace: bookie
+  labels:
+    app: books-migrate
+    app.kubernetes.io/name: books-migrate
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: books-migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ghcr.io/sadhakbj/bookie-migrate:latest
+          imagePullPolicy: IfNotPresent
+          # Distroless images already run as nonroot (UID 65532); make it explicit
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            readOnlyRootFilesystem: true
+          env:
+            - name: TZ
+              value: UTC
+            - name: DB_HOST
+              value: mysql.bookie.svc.cluster.local
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USER
+              value: bookie
+            - name: DB_PASSWORD
+              value: bookie
+            - name: DB_NAME
+              value: bookie

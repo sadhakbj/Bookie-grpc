@@ -16,3 +16,10 @@ OTEL_METRICS_OTLP_ENDPOINT=localhost:9090
 # Timezone
 TZ=UTC
 
+# MySQL Database Configuration (docker bootstrap + server + migrations)
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=bookie
+DB_PASSWORD=bookie
+DB_NAME=bookie
+
