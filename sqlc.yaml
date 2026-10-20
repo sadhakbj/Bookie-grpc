@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: "mysql"
+    schema: "src/database/migrations"
+    queries: "src/database/queries"
+    gen:
+      go:
+        package: "sqlcgen"
+        out: "src/internal/bookstore/sqlcgen"
+        sql_package: "database/sql"

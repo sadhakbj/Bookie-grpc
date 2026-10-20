@@ -10,6 +10,7 @@
 package bookstore
 
 import (
+	context "context"
 	reflect "reflect"
 
 	bookie "github.com/sadhakbj/bookie-grpc/protos/bookie"
@@ -41,42 +42,46 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockRepository) Create(book *bookie.Book) {
+func (m *MockRepository) Create(ctx context.Context, book *bookie.Book) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Create", book)
-}
-
-// Create indicates an expected call of Create.
-func (mr *MockRepositoryMockRecorder) Create(book any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), book)
-}
-
-// GetByID mocks base method.
-func (m *MockRepository) GetByID(id string) (*bookie.Book, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", id)
-	ret0, _ := ret[0].(*bookie.Book)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// GetByID indicates an expected call of GetByID.
-func (mr *MockRepositoryMockRecorder) GetByID(id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockRepository)(nil).GetByID), id)
-}
-
-// List mocks base method.
-func (m *MockRepository) List() []*bookie.Book {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List")
-	ret0, _ := ret[0].([]*bookie.Book)
+	ret := m.ctrl.Call(m, "Create", ctx, book)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// List indicates an expected call of List.
-func (mr *MockRepositoryMockRecorder) List() *gomock.Call {
+// Create indicates an expected call of Create.
+func (mr *MockRepositoryMockRecorder) Create(ctx, book any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRepository)(nil).List))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), ctx, book)
+}
+
+// GetByID mocks base method.
+func (m *MockRepository) GetByID(ctx context.Context, id string) (*bookie.Book, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(*bookie.Book)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockRepository)(nil).GetByID), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockRepository) List(ctx context.Context) ([]*bookie.Book, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx)
+	ret0, _ := ret[0].([]*bookie.Book)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockRepositoryMockRecorder) List(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRepository)(nil).List), ctx)
 }
