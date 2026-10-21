@@ -1,4 +1,4 @@
-package main
+package grpcserver
 
 import (
 	"context"

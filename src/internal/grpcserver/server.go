@@ -1,4 +1,6 @@
-package main
+// Package grpcserver wires the Bookie gRPC service and health endpoint onto a
+// gRPC server.
+package grpcserver
 
 import (
 	"context"
@@ -65,12 +67,14 @@ func (s *bookieService) GetByID(ctx context.Context, input *bookiePb.GetByIDRequ
 	return nil, status.Errorf(codes.NotFound, "Book with ID %s not found", input.Id)
 }
 
-type grpcServer struct {
+// Server is the Bookie gRPC server and its health service.
+type Server struct {
 	*grpc.Server
 	health *health.Server
 }
 
-func newGRPCServer(store bookstore.Repository) *grpcServer {
+// New builds a gRPC server exposing the books service and standard health checks.
+func New(store bookstore.Repository) *Server {
 	server := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
@@ -82,9 +86,10 @@ func newGRPCServer(store bookstore.Repository) *grpcServer {
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 	healthpb.RegisterHealthServer(server, healthServer)
 
-	return &grpcServer{Server: server, health: healthServer}
+	return &Server{Server: server, health: healthServer}
 }
 
-func (s *grpcServer) markNotServing() {
+// MarkNotServing reports NOT_SERVING so readiness probes fail while draining.
+func (s *Server) MarkNotServing() {
 	s.health.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
 }
